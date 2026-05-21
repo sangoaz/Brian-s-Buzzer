@@ -7,6 +7,9 @@ from app.services.room_service import (
     get_room_state,
     buzz,
     reset_buzzer,
+    clean_player_name,
+    normalize_player_name,
+    is_player_name_available,
 )
 
 
@@ -120,3 +123,85 @@ class TestResetBuzzer:
         state = reset_buzzer("ABCD")
 
         assert state is None
+
+
+class TestPlayerNameValidation:
+    def test_join_room_cleans_player_name(self):
+        room_code = create_room()
+
+        player = join_room(room_code, "   Kevin    Fruchon   ")
+
+        assert player is not None
+        assert player["name"] == "Kevin Fruchon"
+
+    def test_join_room_rejects_empty_player_name(self):
+        room_code = create_room()
+
+        player = join_room(room_code, "   ")
+
+        assert player is None
+
+    def test_join_room_rejects_duplicate_player_name(self):
+        room_code = create_room()
+        first_player = join_room(room_code, "Kevin")
+
+        second_player = join_room(room_code, "Kevin")
+
+        assert first_player is not None
+        assert second_player is None
+
+    def test_join_room_rejects_duplicate_player_name_with_different_case(self):
+        room_code = create_room()
+        first_player = join_room(room_code, "Kevin")
+
+        second_player = join_room(room_code, "kevin")
+
+        assert first_player is not None
+        assert second_player is None
+
+    def test_join_room_rejects_duplicate_player_name_with_extra_spaces(self):
+        room_code = create_room()
+        first_player = join_room(room_code, "Kevin Fruchon")
+
+        second_player = join_room(room_code, "   kevin    fruchon   ")
+
+        assert first_player is not None
+        assert second_player is None
+
+    def test_clean_player_name_removes_extra_spaces(self):
+        result = clean_player_name("   Kevin    Fruchon   ")
+
+        assert result == "Kevin Fruchon"
+
+    def test_normalize_player_name_removes_spaces_and_lowercases(self):
+        result = normalize_player_name("   Kevin    Fruchon   ")
+
+        assert result == "kevin fruchon"
+
+    def test_is_player_name_available_returns_true_when_name_is_available(self):
+        room = {
+            "players": {
+                "player-1": {
+                    "id": "player-1",
+                    "name": "Kevin",
+                }
+            }
+        }
+
+        result = is_player_name_available(room, "alex")
+
+        assert result is True
+
+    def test_is_player_name_available_returns_false_when_name_already_exists(self):
+        room = {
+            "players": {
+                "player-1": {
+                    "id": "player-1",
+                    "name": "Kevin",
+                }
+            }
+        }
+
+        result = is_player_name_available(room, "kevin")
+
+        assert result is False

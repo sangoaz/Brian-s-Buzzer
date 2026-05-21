@@ -5,6 +5,7 @@ import uuid
 # Stockage des salons en mémoire dans un dictionnaire Python
 rooms = {}
 
+
 # Génère un code aléatoire de 4 Caractères
 def generate_room_code(length: int = 4) -> str:
     return "".join(random.choices(string.ascii_uppercase + string.digits, k=length))
@@ -29,26 +30,31 @@ def create_room() -> str:
 
 # Rejoindre un salon
 def join_room(room_code: str, player_name: str) -> dict | None:
-    # cherche le salon
     room = rooms.get(room_code)
 
-    # Si le salon n'existe pas
     if not room:
         return None
 
-    # Créée un identifiant unique pour le joueur
+    cleaned_player_name = clean_player_name(player_name)
+    normalized_player_name = normalize_player_name(player_name)
+
+    if not normalized_player_name:
+        return None
+
+    if not is_player_name_available(room, normalized_player_name):
+        return None
+
     player_id = str(uuid.uuid4())
 
-    # Création du joueur
     player = {
         "id": player_id,
-        "name": player_name,
+        "name": cleaned_player_name,
     }
 
-    # Ajoute le joueur au salon
     room["players"][player_id] = player
 
     return player
+
 
 # Lire l'état du salon
 def get_room_state(room_code: str) -> dict | None:
@@ -87,6 +93,7 @@ def buzz(room_code: str, player_id: str) -> dict | None:
 
     return player
 
+
 # Reset du buzzer
 def reset_buzzer(room_code: str) -> dict | None:
     room = rooms.get(room_code)
@@ -97,3 +104,27 @@ def reset_buzzer(room_code: str) -> dict | None:
     room["current_buzzer"] = None
 
     return get_room_state(room_code)
+
+
+# Vérifier si un pseudo existe déjà dans le salon
+def is_player_name_available(room: dict, normalized_player_name: str) -> bool:
+    for player in room["players"].values():
+        existing_player_name = player.get("name")
+        normalized_existing_player_name = normalize_player_name(existing_player_name)
+
+        if normalized_existing_player_name == normalized_player_name:
+            return False
+
+    return True
+
+
+# Nettoyer le pseudo pour l'affichage
+def clean_player_name(player_name: str) -> str:
+    words = player_name.split()
+    return " ".join(words)
+
+
+# Normaliser le pseudo pour les comparaisons
+def normalize_player_name(player_name: str) -> str:
+    cleaned_name = clean_player_name(player_name)
+    return cleaned_name.lower()
