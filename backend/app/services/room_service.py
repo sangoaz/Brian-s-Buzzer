@@ -2,6 +2,8 @@ import random
 import string
 import uuid
 
+from app.constants import errors
+
 # Stockage des salons en mémoire dans un dictionnaire Python
 rooms = {}
 
@@ -12,7 +14,7 @@ def generate_room_code(length: int = 4) -> str:
 
 
 # Créée le salon dans rooms
-def create_room() -> str:
+def create_room() -> dict:
     # Génère un code de salon
     room_code = generate_room_code()
 
@@ -25,24 +27,36 @@ def create_room() -> str:
         "current_buzzer": None,
     }
 
-    return room_code
+    return {
+        "success": True,
+        "room_code": room_code,
+    }
 
 
 # Rejoindre un salon
-def join_room(room_code: str, player_name: str) -> dict | None:
+def join_room(room_code: str, player_name: str) -> dict:
     room = rooms.get(room_code)
 
     if not room:
-        return None
+        return {
+            "success": False,
+            "error": errors.ROOM_NOT_FOUND,
+        }
 
     cleaned_player_name = clean_player_name(player_name)
     normalized_player_name = normalize_player_name(player_name)
 
     if not normalized_player_name:
-        return None
+        return {
+            "success": False,
+            "error": errors.INVALID_PLAYER_NAME,
+        }
 
     if not is_player_name_available(room, normalized_player_name):
-        return None
+        return {
+            "success": False,
+            "error": errors.PLAYER_NAME_ALREADY_EXISTS,
+        }
 
     player_id = str(uuid.uuid4())
 
@@ -53,53 +67,71 @@ def join_room(room_code: str, player_name: str) -> dict | None:
 
     room["players"][player_id] = player
 
-    return player
+    return {"success": True, "player": player}
 
 
 # Lire l'état du salon
-def get_room_state(room_code: str) -> dict | None:
+def get_room_state(room_code: str) -> dict:
     room = rooms.get(room_code)
 
     if not room:
-        return None
+        return {
+            "success": False,
+            "error": errors.ROOM_NOT_FOUND,
+        }
 
     return {
-        "room_code": room_code,
-        "players": list(room["players"].values()),
-        "current_buzzer": room["current_buzzer"],
+        "success": True,
+        "room": {
+            "room_code": room_code,
+            "players": list(room["players"].values()),
+            "current_buzzer": room["current_buzzer"],
+        },
     }
 
 
 # Buzzer
-def buzz(room_code: str, player_id: str) -> dict | None:
+def buzz(room_code: str, player_id: str) -> dict:
     # Vérifie que le salon existe
     room = rooms.get(room_code)
 
     if not room:
-        return None
+        return {
+            "success": False,
+            "error": errors.ROOM_NOT_FOUND,
+        }
 
     # Vérifie que le joueur existe
     player = room["players"].get(player_id)
 
     if not player:
-        return None
+        return {
+            "success": False,
+            "error": errors.PLAYER_NOT_FOUND,
+        }
 
     # Si quelqu'un a déjà buzzé, on ne remplace pas le joueur
     if room["current_buzzer"] is not None:
-        return room["current_buzzer"]
+        return {
+            "success": False,
+            "error": errors.BUZZER_ALREADY_LOCKED,
+        }
 
     # Dans le cas où personne n'a encore buzzé
     room["current_buzzer"] = player
 
-    return player
+    return {"success": True, "player": player}
 
 
 # Reset du buzzer
-def reset_buzzer(room_code: str) -> dict | None:
+def reset_buzzer(room_code: str) -> dict:
     room = rooms.get(room_code)
 
     if not room:
-        return None
+        return {
+            "success": False,
+            "error": errors.ROOM_NOT_FOUND,
+        }
 
     room["current_buzzer"] = None
 

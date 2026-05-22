@@ -1,5 +1,6 @@
 from unittest.mock import patch
 
+from app.constants import errors
 from app.services.room_service import (
     rooms,
     create_room,
@@ -15,8 +16,10 @@ from app.services.room_service import (
 
 class TestCreateRoom:
     def test_create_room(self):
-        room_code = create_room()
+        result = create_room()
+        room_code = result["room_code"]
 
+        assert result["success"] is True
         assert room_code in rooms
         assert rooms[room_code]["players"] == {}
         assert rooms[room_code]["current_buzzer"] is None
@@ -31,142 +34,186 @@ class TestCreateRoom:
             "app.services.room_service.generate_room_code",
             side_effect=["ABCD", "WXYZ"],
         ):
-            room_code = create_room()
+            result = create_room()
 
-        assert room_code == "WXYZ"
+        assert result == {
+            "success": True,
+            "room_code": "WXYZ",
+        }
         assert "ABCD" in rooms
         assert "WXYZ" in rooms
 
 
 class TestJoinRoom:
     def test_join_existing_room(self):
-        room_code = create_room()
+        room_code = create_room()["room_code"]
 
-        player = join_room(room_code, "Kevin")
+        result = join_room(room_code, "Kevin")
+        player = result["player"]
 
-        assert player is not None
+        assert result["success"] == True
         assert player["name"] == "Kevin"
         assert player["id"] in rooms[room_code]["players"]
 
     def test_join_unknown_room_returns_none(self):
-        player = join_room("ABCD", "Kevin")
+        result = join_room("ABCD", "Kevin")
 
-        assert player is None
+        assert result == {
+            "success": False,
+            "error": errors.ROOM_NOT_FOUND,
+        }
 
 
 class TestGetRoomState:
     def test_get_room_state(self):
-        room_code = create_room()
-        player = join_room(room_code, "Kevin")
+        room_code = create_room()["room_code"]
+        player = join_room(room_code, "Kevin")["player"]
 
-        state = get_room_state(room_code)
+        result = get_room_state(room_code)
 
-        assert state == {
-            "room_code": room_code,
-            "players": [player],
-            "current_buzzer": None,
+        assert result == {
+            "success": True,
+            "room": {
+                "room_code": room_code,
+                "players": [player],
+                "current_buzzer": None,
+            },
         }
 
     def test_get_unknown_room_state_returns_none(self):
-        state = get_room_state("ABCD")
+        result = get_room_state("ABCD")
 
-        assert state is None
+        assert result == {
+            "success": False,
+            "error": errors.ROOM_NOT_FOUND,
+        }
 
 
 class TestBuzz:
     def test_buzz_sets_current_buzzer(self):
-        room_code = create_room()
-        player = join_room(room_code, "Kevin")
+        room_code = create_room()["room_code"]
+        player = join_room(room_code, "Kevin")["player"]
 
         result = buzz(room_code, player["id"])
 
-        assert result == player
+        assert result == {
+            "success": True,
+            "player": player,
+        }
         assert rooms[room_code]["current_buzzer"] == player
 
     def test_buzz_unknown_room_returns_none(self):
         result = buzz("ABCD", "fake-player-id")
 
-        assert result is None
+        assert result == {
+            "success": False,
+            "error": errors.ROOM_NOT_FOUND,
+        }
 
     def test_buzz_unknown_player_returns_none(self):
-        room_code = create_room()
+        room_code = create_room()["room_code"]
 
         result = buzz(room_code, "fake-player-id")
 
-        assert result is None
+        assert result == {
+            "success": False,
+            "error": errors.PLAYER_NOT_FOUND,
+        }
 
     def test_buzz_does_not_replace_first_buzzer(self):
-        room_code = create_room()
-        first_player = join_room(room_code, "Kevin")
-        second_player = join_room(room_code, "Alex")
+        room_code = create_room()["room_code"]
+        first_player = join_room(room_code, "Kevin")["player"]
+        second_player = join_room(room_code, "Alex")["player"]
 
         first_result = buzz(room_code, first_player["id"])
         second_result = buzz(room_code, second_player["id"])
 
-        assert first_result == first_player
-        assert second_result == first_player
+        assert first_result == {
+            "success": True,
+            "player": first_player,
+        }
+        assert second_result == {
+            "success": False,
+            "error": errors.BUZZER_ALREADY_LOCKED,
+        }
         assert rooms[room_code]["current_buzzer"] == first_player
 
 
 class TestResetBuzzer:
     def test_reset_buzzer(self):
-        room_code = create_room()
-        player = join_room(room_code, "Kevin")
+        room_code = create_room()["room_code"]
+        player = join_room(room_code, "Kevin")["player"]
         buzz(room_code, player["id"])
 
-        state = reset_buzzer(room_code)
+        result = reset_buzzer(room_code)
 
-        assert state["current_buzzer"] is None
+        assert result["success"] is True
+        assert result["room"]["current_buzzer"] is None
         assert rooms[room_code]["current_buzzer"] is None
 
-    def test_reset_unknown_room_returns_none(self):
-        state = reset_buzzer("ABCD")
+    def test_reset_unknown_room_returns_error(self):
+        result = reset_buzzer("ABCD")
 
-        assert state is None
+        assert result == {
+            "success": False,
+            "error": errors.ROOM_NOT_FOUND,
+        }
 
 
 class TestPlayerNameValidation:
     def test_join_room_cleans_player_name(self):
-        room_code = create_room()
+        room_code = create_room()["room_code"]
 
-        player = join_room(room_code, "   Kevin    Fruchon   ")
+        result = join_room(room_code, "   Kevin    Fruchon   ")
 
-        assert player is not None
-        assert player["name"] == "Kevin Fruchon"
+        assert result["success"] is True
+        assert result["player"]["name"] == "Kevin Fruchon"
 
     def test_join_room_rejects_empty_player_name(self):
-        room_code = create_room()
+        room_code = create_room()["room_code"]
 
-        player = join_room(room_code, "   ")
+        result = join_room(room_code, "   ")
 
-        assert player is None
+        assert result == {
+            "success": False,
+            "error": errors.INVALID_PLAYER_NAME,
+        }
 
     def test_join_room_rejects_duplicate_player_name(self):
-        room_code = create_room()
-        first_player = join_room(room_code, "Kevin")
+        room_code = create_room()["room_code"]
+        first_result = join_room(room_code, "Kevin")
 
-        second_player = join_room(room_code, "Kevin")
+        second_result = join_room(room_code, "Kevin")
 
-        assert first_player is not None
-        assert second_player is None
+        assert first_result["success"] is True
+        assert second_result == {
+            "success": False,
+            "error": errors.PLAYER_NAME_ALREADY_EXISTS,
+        }
 
     def test_join_room_rejects_duplicate_player_name_with_different_case(self):
-        room_code = create_room()
-        first_player = join_room(room_code, "Kevin")
+        room_code = create_room()["room_code"]
+        first_result = join_room(room_code, "Kevin")
 
-        second_player = join_room(room_code, "kevin")
+        second_result = join_room(room_code, "kevin")
 
-        assert first_player is not None
-        assert second_player is None
+        assert first_result["success"] is True
+        assert second_result == {
+            "success": False,
+            "error": errors.PLAYER_NAME_ALREADY_EXISTS,
+        }
 
     def test_join_room_rejects_duplicate_player_name_with_extra_spaces(self):
-        room_code = create_room()
-        first_player = join_room(room_code, "Kevin Fruchon")
+        room_code = create_room()["room_code"]
+        first_result = join_room(room_code, "Kevin Fruchon")
 
-        second_player = join_room(room_code, "   kevin    fruchon   ")
+        second_result = join_room(room_code, "   kevin    fruchon   ")
 
-        assert first_player is not None
-        assert second_player is None
+        assert first_result["success"] is True
+        assert second_result == {
+            "success": False,
+            "error": errors.PLAYER_NAME_ALREADY_EXISTS,
+        }
 
     def test_clean_player_name_removes_extra_spaces(self):
         result = clean_player_name("   Kevin    Fruchon   ")

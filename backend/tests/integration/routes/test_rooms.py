@@ -1,3 +1,4 @@
+from app.constants import errors
 from app.services.room_service import rooms
 
 
@@ -50,7 +51,7 @@ class TestJoinRoomRoute:
         )
 
         assert response.status_code == 404
-        assert response.json()["detail"] == "Room not found"
+        assert response.json()["detail"] == errors.ROOM_NOT_FOUND
 
 
 class TestReadRoomStateRoute:
@@ -92,7 +93,7 @@ class TestReadRoomStateRoute:
         response = client.get("/rooms/ABCD")
 
         assert response.status_code == 404
-        assert response.json()["detail"] == "Room not found"
+        assert response.json()["detail"] == errors.ROOM_NOT_FOUND
 
 
 class TestBuzzRoomRoute:
@@ -137,7 +138,7 @@ class TestBuzzRoomRoute:
         response = client.post("/rooms/ABCD/buzz/fake-player-id")
 
         assert response.status_code == 404
-        assert response.json()["detail"] == "Room or player not found"
+        assert response.json()["detail"] == errors.ROOM_NOT_FOUND
 
     def test_buzz_unknown_player_returns_404(self, client):
         create_response = client.post("/rooms")
@@ -146,7 +147,7 @@ class TestBuzzRoomRoute:
         response = client.post(f"/rooms/{room_code}/buzz/fake-player-id")
 
         assert response.status_code == 404
-        assert response.json()["detail"] == "Room or player not found"
+        assert response.json()["detail"] == errors.PLAYER_NOT_FOUND
 
 
 class TestResetRoomBuzzerRoute:
@@ -190,4 +191,4 @@ class TestResetRoomBuzzerRoute:
         response = client.post("/rooms/ABCD/reset")
 
         assert response.status_code == 404
-        assert response.json()["detail"] == "Room not found"
+        assert response.json()["detail"] == errors.ROOM_NOT_FOUND
