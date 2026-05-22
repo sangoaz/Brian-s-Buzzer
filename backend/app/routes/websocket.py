@@ -1,5 +1,6 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
+from app.constants import events
 from app.services.room_service import buzz, get_room_state, reset_buzzer
 from app.websocket.manager import manager
 
@@ -23,7 +24,7 @@ async def websocket_endpoint(
     if not room_result["success"]:
         await websocket.send_json(
             {
-                "type": "error",
+                "type": events.ERROR,
                 "error": room_result["error"],
             }
         )
@@ -35,7 +36,7 @@ async def websocket_endpoint(
     await manager.broadcast(
         room_code,
         {
-            "type": "room_state",
+            "type": events.ROOM_STATE,
             "room": room_state,
         },
     )
@@ -69,7 +70,7 @@ async def websocket_endpoint(
                 await manager.broadcast(
                     room_code,
                     {
-                        "type": "buzz",
+                        "type": events.BUZZ,
                         "player": player,
                         "room": room_state,
                     },
@@ -92,7 +93,7 @@ async def websocket_endpoint(
                 await manager.broadcast(
                     room_code,
                     {
-                        "type": "reset",
+                        "type": events.RESET,
                         "room": room_state,
                     },
                 )
@@ -116,7 +117,7 @@ async def websocket_endpoint(
             await manager.broadcast(
                 room_code,
                 {
-                    "type": "disconnect",
+                    "type": events.PLAYER_LEFT,
                     "player_id": player_id,
                     "room": room_state,
                 },
