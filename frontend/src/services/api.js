@@ -22,7 +22,8 @@ export async function joinRoom(roomCode, name) {
   })
 
   if (!response.ok) {
-    throw new Error("Salon introuvable")
+    const errorData = await response.json()
+    throw new Error(errorData.detail)
   }
 
   return response.json()

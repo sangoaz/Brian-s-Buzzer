@@ -1,4 +1,5 @@
 from fastapi import APIRouter, HTTPException
+from app.websocket.manager import manager
 
 from app.schemas.room import (
     PlayerJoinRequest,
@@ -12,8 +13,9 @@ from app.services.room_service import (
     get_room_state,
     buzz,
     reset_buzzer,
+    remove_player,
 )
-from app.constants import errors
+from app.constants import errors, events
 from app.utils.exceptions import raise_service_error
 
 router = APIRouter(prefix="/rooms", tags=["Rooms"])
@@ -83,3 +85,23 @@ def reset_room_buzzer(room_code: str):
     room_state = result["room"]
 
     return room_state
+
+
+# Route pour kick un joueur
+@router.delete("/{room_code}/players/{player_id}")
+async def kick_player_from_room(room_code: str, player_id: str):
+    result = remove_player(room_code.upper(), player_id)
+
+    if not result["success"]:
+        raise HTTPException(status_code=404, detail=result["error"])
+
+    await manager.broadcast(
+        room_code.upper(),
+        {
+            "type": events.PLAYER_KICKED,
+            "player_id": player_id,
+            "room": result["room"],
+        },
+    )
+
+    return result

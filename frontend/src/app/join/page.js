@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { joinRoom } from "../../services/api"
 import { savePlayerSession } from "../../utils/storage"
+import { ERROR_MESSAGES } from "../constants/errors"
 
 export default function JoinPage() {
   const router = useRouter()
@@ -35,7 +36,7 @@ export default function JoinPage() {
 
       router.push(`/room/${data.room_code}`)
     } catch (err) {
-      setError("Salon introuvable")
+      setError(ERROR_MESSAGES[err.message] || "Impossible de rejoindre le salon.")
     } finally {
       setLoading(false)
     }

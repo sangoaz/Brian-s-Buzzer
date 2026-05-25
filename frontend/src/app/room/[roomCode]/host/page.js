@@ -17,32 +17,50 @@ export default function HostRoomPage() {
     return `host-${crypto.randomUUID()}`
   }, [])
 
-  const { roomState, connected, sendAction } = useRoomSocket({
+  const { roomState, connected, error, sendAction } = useRoomSocket({
     roomCode,
     playerId: hostId,
   })
+
+  const currentBuzzer = roomState?.current_buzzer
+  const players = roomState?.players ?? []
 
   function handleReset() {
     sendAction("reset")
   }
 
-  const currentBuzzer = roomState?.current_buzzer
-  const players = roomState?.players || []
+  async function handleKickPlayer(playerId) {
+    await fetch(`http://127.0.0.1:8000/rooms/${roomCode}/players/${playerId}`, {
+      method: "DELETE",
+    })
+  }
 
   return (
     <main className="min-h-screen bg-zinc-950 text-white px-6 py-10">
       <div className="max-w-4xl mx-auto text-center">
-        <RoomHeader roomCode={roomCode} subtitle="Code du salon" />
+        <RoomHeader
+          roomCode={roomCode}
+          playerCount={players.length}
+        />
 
-        <p className="text-sm text-zinc-500 mb-10">
+        <p className="text-sm text-zinc-500 mb-4">
           {connected ? "Écran hôte connecté" : "Connexion..."}
         </p>
+
+        {error && (
+          <p className="text-red-400 text-sm mb-6">
+            {error}
+          </p>
+        )}
 
         <CurrentBuzzer currentBuzzer={currentBuzzer} large />
 
         <ResetButton onReset={handleReset} />
 
-        <PlayerList players={players} />
+        <PlayerList
+          players={players}
+          onKickPlayer={handleKickPlayer}
+        />
       </div>
     </main>
   )

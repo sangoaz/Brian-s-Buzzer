@@ -32,10 +32,22 @@ export default function PlayerRoomPage() {
     setPlayerName(storedPlayerName)
   }, [router])
 
-  const { roomState, connected, sendAction } = useRoomSocket({
+  const {
+    roomState,
+    connected,
+    error,
+    kicked,
+    sendAction,
+  } = useRoomSocket({
     roomCode,
     playerId,
   })
+
+  useEffect(() => {
+    if (!kicked) return
+
+    router.push("/join")
+  }, [kicked, router])
 
   function handleBuzz() {
     sendAction("buzz")
@@ -43,18 +55,28 @@ export default function PlayerRoomPage() {
 
   const currentBuzzer = roomState?.current_buzzer
   const hasBuzzed = Boolean(currentBuzzer)
+  const players = roomState?.players ?? []
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-zinc-950 text-white px-6">
       <div className="w-full max-w-md text-center">
-        <RoomHeader roomCode={roomCode} subtitle="Salon" />
+        <RoomHeader
+          roomCode={roomCode}
+          playerCount={players.length}
+        />
 
-        <p className="text-zinc-500 mb-10">
+        <p className="text-zinc-500 mb-6">
           Joueur :{" "}
           <span className="text-white font-bold">
             {playerName}
           </span>
         </p>
+
+        {error && (
+          <p className="text-red-400 text-sm mb-6">
+            {error}
+          </p>
+        )}
 
         <CurrentBuzzer currentBuzzer={currentBuzzer} />
 

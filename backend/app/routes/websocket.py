@@ -1,7 +1,7 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
 from app.constants import events
-from app.services.room_service import buzz, get_room_state, reset_buzzer
+from app.services.room_service import buzz, get_room_state, reset_buzzer, remove_player
 from app.websocket.manager import manager
 
 router = APIRouter(tags=["WebSocket"])
@@ -55,7 +55,7 @@ async def websocket_endpoint(
                 if not buzz_result["success"]:
                     await websocket.send_json(
                         {
-                            "type": "error",
+                            "type": events.ERROR,
                             "error": buzz_result["error"],
                         }
                     )
@@ -82,7 +82,7 @@ async def websocket_endpoint(
                 if not reset_result["success"]:
                     await websocket.send_json(
                         {
-                            "type": "error",
+                            "type": events.ERROR,
                             "error": reset_result["error"],
                         }
                     )
@@ -101,24 +101,22 @@ async def websocket_endpoint(
             else:
                 await websocket.send_json(
                     {
-                        "type": "error",
-                        "message": "Unknown action",
+                        "type": events.ERROR,
+                        "message": "UNKNOWN_ACTION",
                     }
                 )
 
     except WebSocketDisconnect:
         manager.disconnect(room_code, player_id)
 
-        room_result = get_room_state(room_code)
+        remove_result = remove_player(room_code, player_id)
 
-        if room_result["success"]:
-            room_state = room_result["room"]
-
+        if remove_result["success"]:
             await manager.broadcast(
                 room_code,
                 {
                     "type": events.PLAYER_LEFT,
                     "player_id": player_id,
-                    "room": room_state,
+                    "room": remove_result["room"],
                 },
             )

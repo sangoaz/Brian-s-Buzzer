@@ -1,0 +1,7 @@
+export const ROOM_STATE = "room_state"
+export const PLAYER_JOINED = "player_joined"
+export const PLAYER_LEFT = "player_left"
+export const PLAYER_KICKED = "player_kicked"
+export const BUZZ = "buzz"
+export const RESET = "reset"
+export const ERROR = "error"

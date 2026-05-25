@@ -1,11 +1,23 @@
-export default function RoomHeader({ roomCode, subtitle }) {
+export default function RoomHeader({
+  roomCode,
+  playerCount = 0,
+}) {
   return (
-    <>
-      <p className="text-zinc-400 mb-2">{subtitle}</p>
+    <div className="flex justify-between items-center p-4">
+      <div>
+        <h1 className="text-xl font-bold">
+          Salon : {roomCode}
+        </h1>
+      </div>
 
-      <h1 className="text-5xl md:text-7xl font-black mb-8">
-        {roomCode}
-      </h1>
-    </>
+      <div
+        className="px-3 py-1 rounded-full text-sm text-black"
+        style={{
+          background: "#f3f4f6",
+        }}
+      >
+        👥 {playerCount} joueur{playerCount > 1 ? "s" : ""}
+      </div>
+    </div>
   )
 }

@@ -71,7 +71,7 @@ def join_room(room_code: str, player_name: str) -> dict:
 
 
 # Lire l'état du salon
-def get_room_state(room_code: str) -> dict:
+def get_room_state(room_code: str):
     room = rooms.get(room_code)
 
     if not room:
@@ -82,11 +82,7 @@ def get_room_state(room_code: str) -> dict:
 
     return {
         "success": True,
-        "room": {
-            "room_code": room_code,
-            "players": list(room["players"].values()),
-            "current_buzzer": room["current_buzzer"],
-        },
+        "room": get_public_room(room),
     }
 
 
@@ -139,12 +135,9 @@ def reset_buzzer(room_code: str) -> dict:
 
 
 # Vérifier si un pseudo existe déjà dans le salon
-def is_player_name_available(room: dict, normalized_player_name: str) -> bool:
+def is_player_name_available(room, player_name: str) -> bool:
     for player in room["players"].values():
-        existing_player_name = player.get("name")
-        normalized_existing_player_name = normalize_player_name(existing_player_name)
-
-        if normalized_existing_player_name == normalized_player_name:
+        if player["name"].lower() == player_name.lower():
             return False
 
     return True
@@ -160,3 +153,37 @@ def clean_player_name(player_name: str) -> str:
 def normalize_player_name(player_name: str) -> str:
     cleaned_name = clean_player_name(player_name)
     return cleaned_name.lower()
+
+
+# Déconnecter le joueur
+def remove_player(room_code: str, player_id: str) -> dict:
+    room = rooms.get(room_code)
+
+    if not room:
+        return {
+            "success": False,
+            "error": errors.ROOM_NOT_FOUND,
+        }
+
+    room["players"].pop(player_id, None)
+
+    if room.get("current_buzzer") == player_id:
+        room["current_buzzer"] = None
+
+    return {
+        "success": True,
+        "room": get_public_room(room),
+    }
+
+
+# =========================
+# Helpers
+# =========================
+
+
+# Transforme une room interne en room envoyable au frontend
+def get_public_room(room: dict) -> dict:
+    return {
+        **room,
+        "players": list(room["players"].values()),
+    }
