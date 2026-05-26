@@ -1,7 +1,13 @@
 from fastapi import APIRouter, WebSocket, WebSocketDisconnect
 
-from app.constants import events
-from app.services.room_service import buzz, get_room_state, reset_buzzer, remove_player
+from app.constants import events, errors
+from app.services.room_service import (
+    buzz,
+    get_room_state,
+    reset_buzzer,
+    remove_player,
+    can_connect_to_room,
+)
 from app.websocket.manager import manager
 
 router = APIRouter(tags=["WebSocket"])
@@ -15,10 +21,22 @@ async def websocket_endpoint(
 ):
     room_code = room_code.upper()
 
-    # Connexion: Accepte la connection, stocke le websocket dans la bonne room
+    connection_result = can_connect_to_room(room_code, player_id)
+
+    if not connection_result["success"]:
+        await websocket.accept()
+        await websocket.send_json(
+            {
+                "type": events.ERROR,
+                "error": connection_result["error"],
+            }
+        )
+        await websocket.close()
+        return
+
+    # Connexion autorisée : accepte la connexion et stocke le websocket
     await manager.connect(room_code, player_id, websocket)
 
-    # Récupère l'état du salon
     room_result = get_room_state(room_code)
 
     if not room_result["success"]:
@@ -28,11 +46,11 @@ async def websocket_endpoint(
                 "error": room_result["error"],
             }
         )
+        await websocket.close()
         return
 
     room_state = room_result["room"]
 
-    # Dès qu'un joueur se connecte, on envoie l'état actuel du salon à tout le monde
     await manager.broadcast(
         room_code,
         {
@@ -42,9 +60,7 @@ async def websocket_endpoint(
     )
 
     try:
-        # Le websocket reste vivant tant que le client est connecté
         while True:
-            # Le server attend un message JSON venant du client ex: "action": "buzz"
             data = await websocket.receive_json()
 
             action = data.get("action")
@@ -66,7 +82,6 @@ async def websocket_endpoint(
                 room_result = get_room_state(room_code)
                 room_state = room_result["room"]
 
-                # Le server renvoie le message à tous les joueurs de la room
                 await manager.broadcast(
                     room_code,
                     {
@@ -77,7 +92,7 @@ async def websocket_endpoint(
                 )
 
             elif action == "reset":
-                reset_result = reset_buzzer(room_code)
+                reset_result = reset_buzzer(room_code, player_id)
 
                 if not reset_result["success"]:
                     await websocket.send_json(
@@ -102,7 +117,7 @@ async def websocket_endpoint(
                 await websocket.send_json(
                     {
                         "type": events.ERROR,
-                        "message": "UNKNOWN_ACTION",
+                        "error": errors.UNKNOWN_ACTION,
                     }
                 )
 

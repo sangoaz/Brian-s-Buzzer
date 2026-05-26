@@ -16,6 +16,10 @@ export default function CreatePage() {
 
       const data = await createRoom()
 
+      // Sauvegarde session host
+      localStorage.setItem("hostId", data.host_id)
+      localStorage.setItem("hostRoomCode", data.room_code)
+
       router.push(`/room/${data.room_code}/host`)
     } catch (err) {
       setError("Impossible de créer le salon")
@@ -27,13 +31,19 @@ export default function CreatePage() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-zinc-950 text-white px-6">
       <div className="w-full max-w-md text-center">
-        <h1 className="text-4xl font-black mb-4">Créer une partie</h1>
+        <h1 className="text-4xl font-black mb-4">
+          Créer une partie
+        </h1>
 
         <p className="text-zinc-400 mb-8">
           Crée un salon et affiche l’écran hôte pour gérer le buzzer.
         </p>
 
-        {error && <p className="text-red-400 mb-4">{error}</p>}
+        {error && (
+          <p className="text-red-400 mb-4">
+            {error}
+          </p>
+        )}
 
         <button
           onClick={handleCreateRoom}

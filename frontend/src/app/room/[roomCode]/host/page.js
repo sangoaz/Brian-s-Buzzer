@@ -1,7 +1,7 @@
 "use client"
 
-import { useMemo } from "react"
-import { useParams } from "next/navigation"
+import { useEffect, useState } from "react"
+import { useParams, useRouter } from "next/navigation"
 
 import { useRoomSocket } from "../../../../hooks/useRoomSocket"
 
@@ -12,10 +12,21 @@ import PlayerList from "../../../../components/PlayerList"
 
 export default function HostRoomPage() {
   const { roomCode } = useParams()
+  const router = useRouter()
 
-  const hostId = useMemo(() => {
-    return `host-${crypto.randomUUID()}`
-  }, [])
+  const [hostId, setHostId] = useState(null)
+
+  useEffect(() => {
+    const storedHostId = localStorage.getItem("hostId")
+    const storedRoomCode = localStorage.getItem("hostRoomCode")
+
+    if (!storedHostId || storedRoomCode !== roomCode) {
+      router.push("/create")
+      return
+    }
+
+    setHostId(storedHostId)
+  }, [roomCode, router])
 
   const { roomState, connected, error, sendAction } = useRoomSocket({
     roomCode,
@@ -30,9 +41,12 @@ export default function HostRoomPage() {
   }
 
   async function handleKickPlayer(playerId) {
-    await fetch(`http://127.0.0.1:8000/rooms/${roomCode}/players/${playerId}`, {
-      method: "DELETE",
-    })
+    await fetch(
+      `http://127.0.0.1:8000/rooms/${roomCode}/players/${playerId}?host_id=${hostId}`,
+      {
+        method: "DELETE",
+      }
+    )
   }
 
   return (

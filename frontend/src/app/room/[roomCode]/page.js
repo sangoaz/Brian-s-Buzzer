@@ -16,6 +16,7 @@ export default function PlayerRoomPage() {
 
   const [playerId, setPlayerId] = useState(null)
   const [playerName, setPlayerName] = useState("")
+  const [leaving, setLeaving] = useState(false)
 
   useEffect(() => {
     const {
@@ -53,6 +54,25 @@ export default function PlayerRoomPage() {
     sendAction("buzz")
   }
 
+  async function handleLeaveRoom() {
+    if (!playerId) return
+
+    try {
+      setLeaving(true)
+
+      await fetch(
+        `http://127.0.0.1:8000/rooms/${roomCode}/players/${playerId}/leave`,
+        {
+          method: "DELETE",
+        }
+      )
+
+      router.push("/join")
+    } finally {
+      setLeaving(false)
+    }
+  }
+
   const currentBuzzer = roomState?.current_buzzer
   const hasBuzzed = Boolean(currentBuzzer)
   const players = roomState?.players ?? []
@@ -88,6 +108,21 @@ export default function PlayerRoomPage() {
         <p className="mt-8 text-sm text-zinc-500">
           {connected ? "Connecté au salon" : "Connexion..."}
         </p>
+
+        <button
+          onClick={handleLeaveRoom}
+          disabled={leaving}
+          className="
+            mt-6
+            text-sm
+            text-zinc-500
+            hover:text-red-400
+            transition
+            disabled:opacity-50
+          "
+        >
+          {leaving ? "Déconnexion..." : "Quitter le salon"}
+        </button>
       </div>
     </main>
   )

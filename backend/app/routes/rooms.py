@@ -14,6 +14,7 @@ from app.services.room_service import (
     buzz,
     reset_buzzer,
     remove_player,
+    kick_player,
 )
 from app.constants import errors, events
 from app.utils.exceptions import raise_service_error
@@ -24,8 +25,7 @@ router = APIRouter(prefix="/rooms", tags=["Rooms"])
 # Route de création de salon
 @router.post("", response_model=RoomCreateResponse, status_code=201)
 def create_new_room():
-    result = create_room()
-    return {"room_code": result["room_code"]}
+    return create_room()
 
 
 # Route pour rejoindre un salon
@@ -89,7 +89,35 @@ def reset_room_buzzer(room_code: str):
 
 # Route pour kick un joueur
 @router.delete("/{room_code}/players/{player_id}")
-async def kick_player_from_room(room_code: str, player_id: str):
+async def kick_player_from_room(
+    room_code: str,
+    player_id: str,
+    host_id: str,
+):
+    result = kick_player(
+        room_code.upper(),
+        host_id,
+        player_id,
+    )
+
+    if not result["success"]:
+        raise HTTPException(status_code=403, detail=result["error"])
+
+    await manager.broadcast(
+        room_code.upper(),
+        {
+            "type": events.PLAYER_KICKED,
+            "player_id": player_id,
+            "room": result["room"],
+        },
+    )
+
+    return result
+
+
+# Déconnection volontaire du joueur
+@router.delete("/{room_code}/players/{player_id}/leave")
+async def leave_room(room_code: str, player_id: str):
     result = remove_player(room_code.upper(), player_id)
 
     if not result["success"]:
@@ -98,7 +126,7 @@ async def kick_player_from_room(room_code: str, player_id: str):
     await manager.broadcast(
         room_code.upper(),
         {
-            "type": events.PLAYER_KICKED,
+            "type": events.PLAYER_LEFT,
             "player_id": player_id,
             "room": result["room"],
         },

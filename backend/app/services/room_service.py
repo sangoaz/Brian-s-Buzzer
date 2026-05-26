@@ -22,7 +22,11 @@ def create_room() -> dict:
     while room_code in rooms:
         room_code = generate_room_code()
 
+    host_id = str(uuid.uuid4())
+
     rooms[room_code] = {
+        "code": room_code,
+        "host_id": host_id,
         "players": {},
         "current_buzzer": None,
     }
@@ -30,6 +34,7 @@ def create_room() -> dict:
     return {
         "success": True,
         "room_code": room_code,
+        "host_id": host_id,
     }
 
 
@@ -120,13 +125,19 @@ def buzz(room_code: str, player_id: str) -> dict:
 
 
 # Reset du buzzer
-def reset_buzzer(room_code: str) -> dict:
+def reset_buzzer(room_code: str, requester_id: str) -> dict:
     room = rooms.get(room_code)
 
     if not room:
         return {
             "success": False,
             "error": errors.ROOM_NOT_FOUND,
+        }
+
+    if not can_manage_room(room, requester_id):
+        return {
+            "success": False,
+            "error": errors.NOT_HOST_ACTION,
         }
 
     room["current_buzzer"] = None
@@ -165,6 +176,45 @@ def remove_player(room_code: str, player_id: str) -> dict:
             "error": errors.ROOM_NOT_FOUND,
         }
 
+    if player_id not in room["players"]:
+        return {
+            "success": False,
+            "error": errors.PLAYER_NOT_FOUND,
+        }
+
+    room["players"].pop(player_id)
+
+    if room.get("current_buzzer") == player_id:
+        room["current_buzzer"] = None
+
+    return {
+        "success": True,
+        "room": get_public_room(room),
+    }
+
+
+# Fonction permettant à l'host de kick un joueur
+def kick_player(room_code: str, requester_id: str, player_id: str) -> dict:
+    room = rooms.get(room_code)
+
+    if not room:
+        return {
+            "success": False,
+            "error": errors.ROOM_NOT_FOUND,
+        }
+
+    if not can_manage_room(room, requester_id):
+        return {
+            "success": False,
+            "error": errors.NOT_HOST_ACTION,
+        }
+
+    if player_id not in room["players"]:
+        return {
+            "success": False,
+            "error": errors.PLAYER_NOT_FOUND,
+        }
+
     room["players"].pop(player_id, None)
 
     if room.get("current_buzzer") == player_id:
@@ -186,4 +236,34 @@ def get_public_room(room: dict) -> dict:
     return {
         **room,
         "players": list(room["players"].values()),
+    }
+
+
+# Vérifier que celui qui demande une action de gestion est bien l’hôte du salon
+def can_manage_room(room: dict, requester_id: str) -> bool:
+    return room.get("host_id") == requester_id
+
+
+# Un client peut se connecter à la room si et seulement si c'est un host ou un joueur de la room
+def can_connect_to_room(room_code: str, connection_id: str) -> dict:
+    room = rooms.get(room_code)
+
+    if not room:
+        return {
+            "success": False,
+            "error": errors.ROOM_NOT_FOUND,
+        }
+
+    is_host = room.get("host_id") == connection_id
+    is_player = connection_id in room["players"]
+
+    if not is_host and not is_player:
+        return {
+            "success": False,
+            "error": errors.UNAUTHORIZED_CONNECTION,
+        }
+
+    return {
+        "success": True,
+        "room": room,
     }
