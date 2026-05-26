@@ -7,6 +7,7 @@ from app.services.room_service import (
     reset_buzzer,
     remove_player,
     can_connect_to_room,
+    start_game,
 )
 from app.websocket.manager import manager
 
@@ -88,6 +89,26 @@ async def websocket_endpoint(
                         "type": events.BUZZ,
                         "player": player,
                         "room": room_state,
+                    },
+                )
+
+            elif action == "start_game":
+                start_result = start_game(room_code, player_id)
+
+                if not start_result["success"]:
+                    await websocket.send_json(
+                        {
+                            "type": events.ERROR,
+                            "error": start_result["error"],
+                        }
+                    )
+                    continue
+
+                await manager.broadcast(
+                    room_code,
+                    {
+                        "type": events.GAME_STARTED,
+                        "room": start_result["room"],
                     },
                 )
 

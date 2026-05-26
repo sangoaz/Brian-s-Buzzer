@@ -29,12 +29,14 @@ def create_room() -> dict:
         "host_id": host_id,
         "players": {},
         "current_buzzer": None,
+        "status": "waiting",
     }
 
     return {
         "success": True,
         "room_code": room_code,
         "host_id": host_id,
+        "status": "waiting",
     }
 
 
@@ -91,6 +93,31 @@ def get_room_state(room_code: str):
     }
 
 
+# Commencer la partie
+def start_game(room_code: str, requester_id: str) -> dict:
+    room = rooms.get(room_code)
+
+    if not room:
+        return {
+            "success": False,
+            "error": errors.ROOM_NOT_FOUND,
+        }
+
+    if not can_manage_room(room, requester_id):
+        return {
+            "success": False,
+            "error": errors.NOT_HOST_ACTION,
+        }
+
+    room["status"] = "playing"
+    room["current_buzzer"] = None
+
+    return {
+        "success": True,
+        "room": get_public_room(room),
+    }
+
+
 # Buzzer
 def buzz(room_code: str, player_id: str) -> dict:
     # Vérifie que le salon existe
@@ -100,6 +127,12 @@ def buzz(room_code: str, player_id: str) -> dict:
         return {
             "success": False,
             "error": errors.ROOM_NOT_FOUND,
+        }
+
+    if room.get("status", "waiting") != "playing":
+        return {
+            "success": False,
+            "error": errors.GAME_NOT_STARTED,
         }
 
     # Vérifie que le joueur existe
@@ -234,8 +267,10 @@ def kick_player(room_code: str, requester_id: str, player_id: str) -> dict:
 # Transforme une room interne en room envoyable au frontend
 def get_public_room(room: dict) -> dict:
     return {
-        **room,
+        "code": room["code"],
         "players": list(room["players"].values()),
+        "current_buzzer": room["current_buzzer"],
+        "status": room.get("status", "waiting"),
     }
 
 

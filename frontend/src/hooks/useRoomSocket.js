@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { createRoomSocket } from "../services/websocket"
 import { ERROR_MESSAGES } from "../app/constants/errors"
 import {
@@ -9,11 +9,13 @@ import {
   RESET,
   PLAYER_LEFT,
   PLAYER_KICKED,
+  GAME_STARTED,
   ERROR,
 } from "../app/constants/events"
 
-
 export function useRoomSocket({ roomCode, playerId }) {
+  const socketRef = useRef(null)
+
   const [socket, setSocket] = useState(null)
   const [roomState, setRoomState] = useState(null)
   const [connected, setConnected] = useState(false)
@@ -28,56 +30,67 @@ export function useRoomSocket({ roomCode, playerId }) {
       playerId,
     })
 
+    socketRef.current = ws
+    setSocket(ws)
+
     ws.onopen = () => {
       setConnected(true)
       setError("")
     }
-    
-ws.onmessage = (event) => {
-  const message = JSON.parse(event.data)
 
-  if (message.type === ERROR) {
-    setError(
-      ERROR_MESSAGES[message.error] ||
-      "Une erreur est survenue."
-    )
-    return
-  }
-
-  if (message.type === PLAYER_KICKED) {
-    setRoomState(message.room)
-    setError("")
-
-    if (message.player_id === playerId) {
-      setKicked(true)
+    ws.onclose = () => {
+      setConnected(false)
     }
 
-    return
-  }
+    ws.onmessage = (event) => {
+      const message = JSON.parse(event.data)
 
-  if (
-    message.type === ROOM_STATE ||
-    message.type === BUZZ ||
-    message.type === RESET ||
-    message.type === PLAYER_LEFT
-  ) {
-    setRoomState(message.room)
-    setError("")
-    return
-  }
-}
+      if (message.type === ERROR) {
+        setError(
+          ERROR_MESSAGES[message.error] ||
+          "Une erreur est survenue."
+        )
+        return
+      }
 
-    setSocket(ws)
+      if (message.type === PLAYER_KICKED) {
+        setRoomState(message.room)
+        setError("")
+
+        if (message.player_id === playerId) {
+          setKicked(true)
+        }
+
+        return
+      }
+
+      if (
+        message.type === ROOM_STATE ||
+        message.type === BUZZ ||
+        message.type === RESET ||
+        message.type === PLAYER_LEFT ||
+        message.type === GAME_STARTED
+      ) {
+        setRoomState(message.room)
+        setError("")
+        return
+      }
+    }
 
     return () => {
       ws.close()
+      socketRef.current = null
     }
   }, [roomCode, playerId])
 
   function sendAction(action) {
-    if (!socket || socket.readyState !== WebSocket.OPEN) return
+    const currentSocket = socketRef.current
 
-    socket.send(
+    if (!currentSocket || currentSocket.readyState !== WebSocket.OPEN) {
+      return
+    }
+
+    currentSocket.send(
       JSON.stringify({
         action,
       })

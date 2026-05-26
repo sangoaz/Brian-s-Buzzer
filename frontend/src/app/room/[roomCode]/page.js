@@ -9,6 +9,7 @@ import { useRoomSocket } from "../../../hooks/useRoomSocket"
 import RoomHeader from "../../../components/RoomHeader"
 import CurrentBuzzer from "../../../components/CurrentBuzzer"
 import BuzzerButton from "../../../components/BuzzerButton"
+import PlayerList from "../../../components/PlayerList"
 
 export default function PlayerRoomPage() {
   const { roomCode } = useParams()
@@ -76,9 +77,12 @@ export default function PlayerRoomPage() {
   const currentBuzzer = roomState?.current_buzzer
   const hasBuzzed = Boolean(currentBuzzer)
   const players = roomState?.players ?? []
+  const status = roomState?.status ?? "waiting"
+  const isWaiting = status === "waiting"
+  const isPlaying = status === "playing"
 
   return (
-    <main className="min-h-screen flex items-center justify-center bg-zinc-950 text-white px-6">
+    <main className="min-h-screen flex items-center justify-center bg-zinc-950 text-white px-6 py-10">
       <div className="w-full max-w-md text-center">
         <RoomHeader
           roomCode={roomCode}
@@ -98,12 +102,44 @@ export default function PlayerRoomPage() {
           </p>
         )}
 
+        {isWaiting && (
+          <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 mb-6">
+            <p className="text-sm uppercase tracking-widest text-zinc-500 mb-2">
+              État de la partie
+            </p>
+
+            <h2 className="text-2xl font-black">
+              En attente de début
+            </h2>
+
+            <p className="text-zinc-400 mt-2">
+              Attends que l’hôte lance la partie.
+            </p>
+          </div>
+        )}
+
+        {isPlaying && (
+          <div className="rounded-3xl bg-zinc-900 border border-red-600/40 p-4 mb-6">
+            <p className="text-sm uppercase tracking-widest text-red-400 font-bold">
+              Partie en cours
+            </p>
+          </div>
+        )}
+
         <CurrentBuzzer currentBuzzer={currentBuzzer} />
 
         <BuzzerButton
           onBuzz={handleBuzz}
-          disabled={!connected || hasBuzzed}
+          disabled={!connected || hasBuzzed || !isPlaying}
         />
+
+        {isWaiting && (
+          <p className="mt-3 text-sm text-zinc-500">
+            Le buzzer sera activé lorsque l’hôte lancera la partie.
+          </p>
+        )}
+
+        <PlayerList players={players} />
 
         <p className="mt-8 text-sm text-zinc-500">
           {connected ? "Connecté au salon" : "Connexion..."}
