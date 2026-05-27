@@ -30,6 +30,8 @@ def create_room() -> dict:
         "players": {},
         "current_buzzer": None,
         "status": "waiting",
+        "round": 1,
+        "scores": {},
     }
 
     return {
@@ -73,6 +75,7 @@ def join_room(room_code: str, player_name: str) -> dict:
     }
 
     room["players"][player_id] = player
+    room["scores"][player_id] = 0
 
     return {"success": True, "player": player}
 
@@ -215,9 +218,12 @@ def remove_player(room_code: str, player_id: str) -> dict:
             "error": errors.PLAYER_NOT_FOUND,
         }
 
+    room["scores"].pop(player_id, None)
     room["players"].pop(player_id)
 
-    if room.get("current_buzzer") == player_id:
+    current_buzzer = room.get("current_buzzer")
+
+    if current_buzzer and current_buzzer["id"] == player_id:
         room["current_buzzer"] = None
 
     return {
@@ -248,10 +254,79 @@ def kick_player(room_code: str, requester_id: str, player_id: str) -> dict:
             "error": errors.PLAYER_NOT_FOUND,
         }
 
+    room["scores"].pop(player_id, None)
     room["players"].pop(player_id, None)
 
-    if room.get("current_buzzer") == player_id:
+    current_buzzer = room.get("current_buzzer")
+
+    if current_buzzer and current_buzzer["id"] == player_id:
         room["current_buzzer"] = None
+
+    return {
+        "success": True,
+        "room": get_public_room(room),
+    }
+
+
+# Fonction permettant à l'host de valider une réponse
+def validate_answer(room_code: str, requester_id: str) -> dict:
+    room = rooms.get(room_code)
+
+    if not room:
+        return {
+            "success": False,
+            "error": errors.ROOM_NOT_FOUND,
+        }
+
+    if not can_manage_room(room, requester_id):
+        return {
+            "success": False,
+            "error": errors.NOT_HOST_ACTION,
+        }
+
+    current_buzzer = room.get("current_buzzer")
+
+    if not current_buzzer:
+        return {
+            "success": False,
+            "error": errors.NO_CURRENT_BUZZER,
+        }
+
+    player_id = current_buzzer["id"]
+
+    room["scores"][player_id] = room["scores"].get(player_id, 0) + 1
+    room["current_buzzer"] = None
+    room["round"] = room.get("round", 1) + 1
+
+    return {
+        "success": True,
+        "room": get_public_room(room),
+    }
+
+
+# Fonction permettant à l'host de refuser une réponse
+def reject_answer(room_code: str, requester_id: str) -> dict:
+    room = rooms.get(room_code)
+
+    if not room:
+        return {
+            "success": False,
+            "error": errors.ROOM_NOT_FOUND,
+        }
+
+    if not can_manage_room(room, requester_id):
+        return {
+            "success": False,
+            "error": errors.NOT_HOST_ACTION,
+        }
+
+    if not room.get("current_buzzer"):
+        return {
+            "success": False,
+            "error": errors.NO_CURRENT_BUZZER,
+        }
+
+    room["current_buzzer"] = None
 
     return {
         "success": True,
@@ -271,6 +346,8 @@ def get_public_room(room: dict) -> dict:
         "players": list(room["players"].values()),
         "current_buzzer": room["current_buzzer"],
         "status": room.get("status", "waiting"),
+        "round": room.get("round", 1),
+        "scores": room.get("scores", {}),
     }
 
 

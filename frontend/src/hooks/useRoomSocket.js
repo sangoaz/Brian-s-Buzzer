@@ -11,6 +11,8 @@ import {
   PLAYER_KICKED,
   GAME_STARTED,
   ERROR,
+  ANSWER_REJECTED,
+  ANSWER_VALIDATED,
 } from "../app/constants/events"
 
 export function useRoomSocket({ roomCode, playerId }) {
@@ -69,7 +71,9 @@ export function useRoomSocket({ roomCode, playerId }) {
         message.type === BUZZ ||
         message.type === RESET ||
         message.type === PLAYER_LEFT ||
-        message.type === GAME_STARTED
+        message.type === GAME_STARTED ||
+        message.type === ANSWER_VALIDATED ||
+        message.type === ANSWER_REJECTED
       ) {
         setRoomState(message.room)
         setError("")
