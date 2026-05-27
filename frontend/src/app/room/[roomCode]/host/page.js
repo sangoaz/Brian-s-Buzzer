@@ -67,7 +67,7 @@ export default function HostRoomPage() {
 
   async function handleKickPlayer(playerId) {
     await fetch(
-      `http://127.0.0.1:8000/rooms/${roomCode}/players/${playerId}?host_id=${hostId}`,
+      `${process.env.NEXT_PUBLIC_API_URL}/rooms/${roomCode}/players/${playerId}?host_id=${hostId}`,
       {
         method: "DELETE",
       }
