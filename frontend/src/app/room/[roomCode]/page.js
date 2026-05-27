@@ -62,7 +62,7 @@ export default function PlayerRoomPage() {
       setLeaving(true)
 
       await fetch(
-        `http://127.0.0.1:8000/rooms/${roomCode}/players/${playerId}/leave`,
+        `${process.env.NEXT_PUBLIC_API_URL}/rooms/${roomCode}/players/${playerId}/leave`,
         {
           method: "DELETE",
         }
