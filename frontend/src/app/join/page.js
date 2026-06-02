@@ -1,7 +1,7 @@
 "use client"
 
-import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useRouter, useSearchParams } from "next/navigation"
+import { useState, useEffect } from "react"
 import { joinRoom } from "../../services/api"
 import { savePlayerSession } from "../../utils/storage"
 import { ERROR_MESSAGES } from "../constants/errors"
@@ -13,6 +13,12 @@ export default function JoinPage() {
   const [name, setName] = useState("")
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState("")
+  const searchParams = useSearchParams()
+
+  useEffect(() => {
+    const code = searchParams.get("code")
+    if (code) setRoomCode(code.toUpperCase())
+  }, [searchParams])
 
   async function handleJoinRoom(event) {
     event.preventDefault()

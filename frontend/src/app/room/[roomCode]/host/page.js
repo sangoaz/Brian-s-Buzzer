@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
+import { QRCodeSVG } from "qrcode.react"
 
 import { useRoomSocket } from "../../../../hooks/useRoomSocket"
 
@@ -107,6 +108,15 @@ export default function HostRoomPage() {
             <p className="text-zinc-400 mt-2 mb-6">
               Les joueurs peuvent rejoindre le salon.
             </p>
+
+            <div className="flex justify-center mb-6">
+              <QRCodeSVG
+                value={`${process.env.NEXT_PUBLIC_APP_URL}/join?code=${roomCode}`}
+                size={180}
+                bgColor="#18181b"
+                fgColor="#ffffff"
+              />
+            </div>
 
             <button
               onClick={handleStartGame}

@@ -23,6 +23,8 @@ export function useRoomSocket({ roomCode, playerId }) {
   const [connected, setConnected] = useState(false)
   const [error, setError] = useState("")
   const [kicked, setKicked] = useState(false)
+  const [retryCount, setRetryCount] = useState(0)     // déclenche le useEffect
+  const [retryAttempt, setRetryAttempt] = useState(0) // calcule le délai
 
   useEffect(() => {
     if (!roomCode || !playerId) return
@@ -37,11 +39,16 @@ export function useRoomSocket({ roomCode, playerId }) {
 
     ws.onopen = () => {
       setConnected(true)
+      setRetryAttempt(0)
       setError("")
     }
 
     ws.onclose = () => {
       setConnected(false)
+      setRetryAttempt(n => n + 1)  // ← délai de plus en plus long
+      setTimeout(() => {
+        setRetryCount(n => n + 1)  // ← déclenche la reconnexion
+      }, Math.min(1000 * 2 ** retryAttempt, 30000))
     }
 
     ws.onmessage = (event) => {
@@ -85,7 +92,7 @@ export function useRoomSocket({ roomCode, playerId }) {
       ws.close()
       socketRef.current = null
     }
-  }, [roomCode, playerId])
+  }, [roomCode, playerId, retryCount])
 
   function sendAction(action) {
     const currentSocket = socketRef.current

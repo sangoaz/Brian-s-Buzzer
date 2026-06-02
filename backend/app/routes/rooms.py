@@ -76,8 +76,8 @@ def buzz_room(room_code: str, player_id: str):
 
 # Route pour reset le buzzer
 @router.post("/{room_code}/reset", response_model=RoomStateResponse)
-def reset_room_buzzer(room_code: str):
-    result = reset_buzzer(room_code.upper())
+def reset_room_buzzer(room_code: str, host_id: str):
+    result = reset_buzzer(room_code.upper(), host_id)
 
     if not result["success"]:
         raise_service_error(result["error"])
