@@ -76,6 +76,7 @@ export default function PlayerRoomPage() {
 
   const currentBuzzer = roomState?.current_buzzer
   const hasBuzzed = Boolean(currentBuzzer)
+  const iAmTheBuzzer = currentBuzzer?.id === playerId
   const players = roomState?.players ?? []
   const status = roomState?.status ?? "waiting"
   const isWaiting = status === "waiting"
@@ -131,6 +132,7 @@ export default function PlayerRoomPage() {
         <BuzzerButton
           onBuzz={handleBuzz}
           disabled={!connected || hasBuzzed || !isPlaying}
+          iAmTheBuzzer={iAmTheBuzzer}
         />
 
         {isWaiting && (
