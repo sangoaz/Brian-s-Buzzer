@@ -1,12 +1,13 @@
 "use client"
 
+import { Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import { joinRoom } from "../../services/api"
 import { savePlayerSession } from "../../utils/storage"
 import { ERROR_MESSAGES } from "../constants/errors"
 
-export default function JoinPage() {
+function JoinForm() {
   const router = useRouter()
 
   const [roomCode, setRoomCode] = useState("")
@@ -34,11 +35,11 @@ export default function JoinPage() {
 
       const data = await joinRoom(roomCode.trim().toUpperCase(), name.trim())
 
-        savePlayerSession({
+      savePlayerSession({
         playerId: data.player_id,
         playerName: data.name,
         roomCode: data.room_code,
-        })
+      })
 
       router.push(`/room/${data.room_code}`)
     } catch (err) {
@@ -81,5 +82,13 @@ export default function JoinPage() {
         </button>
       </form>
     </main>
+  )
+}
+
+export default function JoinPage() {
+  return (
+    <Suspense>
+      <JoinForm />
+    </Suspense>
   )
 }
