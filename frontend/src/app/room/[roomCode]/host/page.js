@@ -47,6 +47,11 @@ export default function HostRoomPage() {
 
   const isWaiting = status === "waiting"
   const isPlaying = status === "playing"
+  const isFinished = status === "finished"
+
+  const sortedPlayers = [...players].sort(
+    (a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0)
+  )
 
   const hasCurrentBuzzer = Boolean(currentBuzzer)
 
@@ -56,6 +61,12 @@ export default function HostRoomPage() {
 
   function handleReset() {
     sendAction("reset")
+  }
+
+  function handleEndGame() {
+    const confirmed = window.confirm("Terminer la partie et afficher le classement final ?")
+    if (!confirmed) return
+    sendAction("end_game")
   }
 
   function handleValidateAnswer() {
@@ -152,9 +163,48 @@ export default function HostRoomPage() {
               Partie en cours
             </p>
 
-            <p className="text-zinc-400 mt-2">
+            <p className="text-zinc-400 mt-2 mb-4">
               Manche {roomState?.round ?? 1}
             </p>
+
+            <button
+              onClick={handleEndGame}
+              className="w-full bg-zinc-700 hover:bg-zinc-600 transition rounded-2xl py-3 font-bold text-sm"
+            >
+              Terminer la partie
+            </button>
+          </div>
+        )}
+
+        {isFinished && (
+          <div className="rounded-3xl bg-zinc-900 border border-yellow-500/40 p-6 mb-6">
+            <p className="text-sm uppercase tracking-widest text-yellow-400 font-bold mb-2">
+              Partie terminée
+            </p>
+
+            <h2 className="text-3xl font-black mb-6">Classement final</h2>
+
+            <ul className="space-y-3 text-left">
+              {sortedPlayers.map((player, index) => (
+                <li
+                  key={player.id}
+                  className={`flex items-center justify-between rounded-xl px-4 py-3 ${
+                    index === 0 ? "bg-yellow-500/20 border border-yellow-500/40" : "bg-zinc-800"
+                  }`}
+                >
+                  <span className="font-bold">
+                    {index === 0 && "🏆 "}
+                    {index === 1 && "🥈 "}
+                    {index === 2 && "🥉 "}
+                    {index > 2 && `${index + 1}. `}
+                    {player.name}
+                  </span>
+                  <span className="text-yellow-400 font-black text-xl">
+                    {scores[player.id] ?? 0}
+                  </span>
+                </li>
+              ))}
+            </ul>
           </div>
         )}
 

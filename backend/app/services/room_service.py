@@ -121,6 +121,31 @@ def start_game(room_code: str, requester_id: str) -> dict:
     }
 
 
+# Finir la parte
+def end_game(room_code: str, requester_id: str) -> dict:
+    room = rooms.get(room_code)
+
+    if not room:
+        return {
+            "success": False,
+            "error": errors.ROOM_NOT_FOUND,
+        }
+
+    if not can_manage_room(room, requester_id):
+        return {
+            "success": False,
+            "error": errors.NOT_HOST_ACTION,
+        }
+
+    room["status"] = "finished"
+    room["current_buzzer"] = None
+
+    return {
+        "success": True,
+        "room": get_public_room(room),
+    }
+
+
 # Buzzer
 def buzz(room_code: str, player_id: str) -> dict:
     # Vérifie que le salon existe

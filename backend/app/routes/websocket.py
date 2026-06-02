@@ -10,6 +10,7 @@ from app.services.room_service import (
     start_game,
     validate_answer,
     reject_answer,
+    end_game,
 )
 from app.websocket.manager import manager
 
@@ -111,6 +112,26 @@ async def websocket_endpoint(
                     {
                         "type": events.GAME_STARTED,
                         "room": start_result["room"],
+                    },
+                )
+
+            elif action == "end_game":
+                end_result = end_game(room_code, player_id)
+
+                if not end_result["success"]:
+                    await websocket.send_json(
+                        {
+                            "type": events.ERROR,
+                            "error": end_result["error"],
+                        }
+                    )
+                    continue
+
+                await manager.broadcast(
+                    room_code,
+                    {
+                        "type": events.GAME_FINISHED,
+                        "room": end_result["room"],
                     },
                 )
 
