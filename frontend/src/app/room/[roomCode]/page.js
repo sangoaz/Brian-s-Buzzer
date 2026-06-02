@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 
-import { getPlayerSession } from "../../../utils/storage"
+import { getPlayerSession, clearPlayerSession } from "../../../utils/storage"
 import { useRoomSocket } from "../../../hooks/useRoomSocket"
 
 import RoomHeader from "../../../components/RoomHeader"
@@ -48,8 +48,15 @@ export default function PlayerRoomPage() {
   useEffect(() => {
     if (!kicked) return
 
+    clearPlayerSession()
     router.push("/join")
   }, [kicked, router])
+
+  useEffect(() => {
+    if (!isFinished) return
+
+    clearPlayerSession()
+  }, [isFinished])
 
   function handleBuzz() {
     sendAction("buzz")
@@ -68,6 +75,7 @@ export default function PlayerRoomPage() {
         }
       )
 
+      clearPlayerSession()
       router.push("/join")
     } finally {
       setLeaving(false)
