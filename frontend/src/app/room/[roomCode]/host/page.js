@@ -67,6 +67,13 @@ export default function HostRoomPage() {
   }
 
   async function handleKickPlayer(playerId) {
+    const player = players.find((p) => p.id === playerId)
+    const confirmed = window.confirm(
+      `Voulez-vous déconnecter ${player?.name ?? "ce joueur"} ?`
+    )
+
+    if (!confirmed) return
+
     await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/rooms/${roomCode}/players/${playerId}?host_id=${hostId}`,
       {
