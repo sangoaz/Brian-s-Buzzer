@@ -69,6 +69,12 @@ export default function HostRoomPage() {
     sendAction("end_game")
   }
 
+  function handleRestartGame() {
+    const confirmed = window.confirm("Lancer une nouvelle partie ? Les scores seront remis à zéro.")
+    if (!confirmed) return
+    sendAction("restart_game")
+  }
+
   function handleValidateAnswer() {
     sendAction("validate_answer")
   }
@@ -205,6 +211,13 @@ export default function HostRoomPage() {
                 </li>
               ))}
             </ul>
+
+            <button
+              onClick={handleRestartGame}
+              className="w-full mt-6 bg-red-600 hover:bg-red-700 transition rounded-2xl py-4 font-bold text-lg"
+            >
+              Nouvelle partie
+            </button>
           </div>
         )}
 

@@ -14,6 +14,7 @@ import {
   ANSWER_REJECTED,
   ANSWER_VALIDATED,
   GAME_FINISHED,
+  GAME_RESTARTED,
 } from "../app/constants/events"
 
 export function useRoomSocket({ roomCode, playerId }) {
@@ -82,7 +83,8 @@ export function useRoomSocket({ roomCode, playerId }) {
         message.type === GAME_STARTED ||
         message.type === ANSWER_VALIDATED ||
         message.type === ANSWER_REJECTED ||
-        message.type === GAME_FINISHED
+        message.type === GAME_FINISHED ||
+        message.type === GAME_RESTARTED
       ) {
         setRoomState(message.room)
         setError("")
