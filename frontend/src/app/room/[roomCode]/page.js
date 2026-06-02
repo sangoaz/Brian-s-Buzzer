@@ -78,6 +78,7 @@ export default function PlayerRoomPage() {
   const hasBuzzed = Boolean(currentBuzzer)
   const iAmTheBuzzer = currentBuzzer?.id === playerId
   const players = roomState?.players ?? []
+  const scores = roomState?.scores ?? {}
   const status = roomState?.status ?? "waiting"
   const isWaiting = status === "waiting"
   const isPlaying = status === "playing"
@@ -141,7 +142,37 @@ export default function PlayerRoomPage() {
           </p>
         )}
 
-        <PlayerList players={players} />
+        <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 mt-6 text-left">
+          <h2 className="text-2xl font-black mb-4">Joueurs</h2>
+
+          {players.length === 0 ? (
+            <p className="text-zinc-500">Aucun joueur pour le moment.</p>
+          ) : (
+            <ul className="space-y-3">
+              {players.map((player) => (
+                <li
+                  key={player.id}
+                  className={`flex items-center justify-between rounded-xl px-4 py-3 ${
+                    player.id === playerId
+                      ? "bg-zinc-700 border border-zinc-500"
+                      : "bg-zinc-800"
+                  }`}
+                >
+                  <span className="font-bold">
+                    {player.name}
+                    {player.id === playerId && (
+                      <span className="ml-2 text-xs text-zinc-400">(toi)</span>
+                    )}
+                  </span>
+
+                  <span className="text-red-400 font-black text-xl">
+                    {scores[player.id] ?? 0}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
 
         <p className="mt-8 text-sm text-zinc-500">
           {connected ? "Connecté au salon" : "Connexion..."}
