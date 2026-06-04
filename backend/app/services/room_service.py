@@ -36,7 +36,6 @@ def create_room(settings: dict = None) -> dict:
         "blocked_players": {},
         "settings": settings
         or {
-            "timer": None,
             "max_rounds": None,
             "block_on_wrong": False,
         },
@@ -257,6 +256,7 @@ def next_round(room_code: str, requester_id: str) -> dict:
         }
 
     room["current_buzzer"] = None
+    room["blocked_players"] = {}
     room["round"] = room.get("round", 1) + 1
 
     max_rounds = room["settings"].get("max_rounds")
@@ -381,6 +381,7 @@ def validate_answer(room_code: str, requester_id: str) -> dict:
 
     room["scores"][player_id] = room["scores"].get(player_id, 0) + 1
     room["current_buzzer"] = None
+    room["blocked_players"] = {}
     room["round"] = room.get("round", 1) + 1
 
     max_rounds = room["settings"].get("max_rounds")
