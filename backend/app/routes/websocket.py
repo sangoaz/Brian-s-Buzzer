@@ -218,6 +218,10 @@ async def websocket_endpoint(
                     },
                 )
 
+            # Garde une activité sur le websocket
+            elif action == "ping":
+                await websocket.send_json({"type": "pong"})
+
             else:
                 await websocket.send_json(
                     {

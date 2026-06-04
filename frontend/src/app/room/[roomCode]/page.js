@@ -52,12 +52,6 @@ export default function PlayerRoomPage() {
     router.push("/join")
   }, [kicked, router])
 
-  useEffect(() => {
-    if (!isFinished) return
-
-    clearPlayerSession()
-  }, [isFinished])
-
   function handleBuzz() {
     sendAction("buzz")
   }
@@ -91,6 +85,12 @@ export default function PlayerRoomPage() {
   const isWaiting = status === "waiting"
   const isPlaying = status === "playing"
   const isFinished = status === "finished"
+
+  useEffect(() => {
+    if (!isFinished) return
+
+    clearPlayerSession()
+  }, [isFinished])
 
   const sortedPlayers = [...players].sort(
     (a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0)

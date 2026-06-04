@@ -45,6 +45,12 @@ export function useRoomSocket({ roomCode, playerId }) {
       setError("")
     }
 
+    const interval = setInterval(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({ action: "ping" }))
+      }
+    }, 30000)
+
     ws.onclose = () => {
       setConnected(false)
       setRetryAttempt(n => n + 1)  // ← délai de plus en plus long
@@ -93,6 +99,7 @@ export function useRoomSocket({ roomCode, playerId }) {
     }
 
     return () => {
+      clearInterval(interval)
       ws.close()
       socketRef.current = null
     }
