@@ -40,6 +40,7 @@ def create_room(settings: dict = None) -> dict:
             "block_on_wrong": False,
         },
         "buzz_history": {},
+        "last_activity": time.time(),
     }
 
     return {
@@ -123,6 +124,7 @@ def start_game(room_code: str, requester_id: str) -> dict:
 
     room["status"] = "playing"
     room["current_buzzer"] = None
+    touch_room(room)
 
     return {
         "success": True,
@@ -250,6 +252,8 @@ def buzz(room_code: str, player_id: str) -> dict:
         }
     )
 
+    touch_room(room)
+
     return {"success": True, "player": player}
 
 
@@ -272,6 +276,7 @@ def next_round(room_code: str, requester_id: str) -> dict:
     room["current_buzzer"] = None
     room["blocked_players"] = {}
     room["round"] = room.get("round", 1) + 1
+    touch_room(room)
 
     max_rounds = room["settings"].get("max_rounds")
     if max_rounds and room["round"] > max_rounds:
@@ -408,6 +413,8 @@ def validate_answer(room_code: str, requester_id: str) -> dict:
     if max_rounds and room["round"] > max_rounds:
         room["status"] = "finished"
 
+    touch_room(room)
+
     return {
         "success": True,
         "room": get_public_room(room),
@@ -454,6 +461,8 @@ def reject_answer(room_code: str, requester_id: str) -> dict:
         if entry["id"] == buzzer_id:
             entry["result"] = "wrong"
             break
+
+    touch_room(room)
 
     return {
         "success": True,
@@ -513,3 +522,23 @@ def can_connect_to_room(room_code: str, connection_id: str) -> dict:
         "success": True,
         "room": room,
     }
+
+
+TTL_SECONDS = 30 * 60  # 30 minutes
+
+
+# Enregistrer la dernière activité
+def touch_room(room: dict):
+    room["last_activity"] = time.time()
+
+
+# Supprimer les room inactives
+def cleanup_inactive_rooms():
+    now = time.time()
+    to_delete = [
+        code
+        for code, room in list(rooms.items())
+        if now - room.get("last_activity", now) > TTL_SECONDS
+    ]
+    for code in to_delete:
+        del rooms[code]
