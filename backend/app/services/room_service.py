@@ -39,6 +39,7 @@ def create_room(settings: dict = None) -> dict:
             "max_rounds": None,
             "block_on_wrong": False,
         },
+        "buzz_history": {},
     }
 
     return {
@@ -181,6 +182,7 @@ def restart_game(room_code: str, requester_id: str) -> dict:
     room["scores"] = {player_id: 0 for player_id in room["players"]}
     room["current_buzzer"] = None
     room["blocked_players"] = {}
+    room["buzz_history"] = {}
 
     return {
         "success": True,
@@ -235,6 +237,12 @@ def buzz(room_code: str, player_id: str) -> dict:
 
     # Dans le cas où personne n'a encore buzzé
     room["current_buzzer"] = player
+
+    # On ajoute le buzz dans un historique pour savoir qui a buzzé et à quelle manche
+    round_num = room.get("round", 1)
+    if round_num not in room["buzz_history"]:
+        room["buzz_history"][round_num] = []
+    room["buzz_history"][round_num].append({"id": player["id"], "name": player["name"]})
 
     return {"success": True, "player": player}
 
@@ -455,6 +463,7 @@ def get_public_room(room: dict) -> dict:
         "round": room.get("round", 1),
         "scores": room.get("scores", {}),
         "blocked_players": active_blocked,
+        "buzz_history": room.get("buzz_history", {}),
     }
 
 

@@ -60,6 +60,7 @@ export default function HostRoomPage() {
   const currentBuzzer = roomState?.current_buzzer
   const players = roomState?.players ?? []
   const scores = roomState?.scores ?? {}
+  const buzzHistory = roomState?.buzz_history ?? {}
 
   const status = roomState?.status ?? "waiting"
 
@@ -312,6 +313,33 @@ export default function HostRoomPage() {
           onReset={handleReset}
           disabled={!isPlaying}
         />
+
+        {(isPlaying || isFinished) && Object.keys(buzzHistory).length > 0 && (
+          <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 mb-6 text-left">
+            <h2 className="text-2xl font-black mb-4">Historique des buzzers</h2>
+            <ul className="space-y-3">
+              {Object.entries(buzzHistory)
+                .sort(([a], [b]) => Number(b) - Number(a))
+                .map(([round, buzzers]) => (
+                  <li key={round}>
+                    <p className="text-xs uppercase tracking-widest text-zinc-500 mb-1">
+                      Manche {round}
+                    </p>
+                    <div className="flex flex-wrap gap-2">
+                      {buzzers.map((buzzer, index) => (
+                        <span
+                          key={index}
+                          className="bg-zinc-800 rounded-lg px-3 py-1 text-sm font-bold"
+                        >
+                          {index + 1}. {buzzer.name}
+                        </span>
+                      ))}
+                    </div>
+                  </li>
+                ))}
+            </ul>
+          </div>
+        )}
 
         <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 mb-6 text-left">
           <h2 className="text-2xl font-black mb-4">
