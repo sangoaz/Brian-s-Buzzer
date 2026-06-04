@@ -232,15 +232,3 @@ async def websocket_endpoint(
 
     except WebSocketDisconnect:
         manager.disconnect(room_code, player_id)
-
-        remove_result = remove_player(room_code, player_id)
-
-        if remove_result["success"]:
-            await manager.broadcast(
-                room_code,
-                {
-                    "type": events.PLAYER_LEFT,
-                    "player_id": player_id,
-                    "room": remove_result["room"],
-                },
-            )
