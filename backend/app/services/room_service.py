@@ -168,7 +168,7 @@ def restart_game(room_code: str, requester_id: str) -> dict:
             "error": errors.GAME_IN_PROGRESS,
         }
 
-    room["status"] = "playing"
+    room["status"] = "waiting"
     room["round"] = 1
     room["scores"] = {player_id: 0 for player_id in room["players"]}
     room["current_buzzer"] = None
