@@ -1,8 +1,9 @@
 "use client"
 
-import { useEffect, useState } from "react"
+import { useEffect, useRef, useState } from "react"
 import { useParams, useRouter } from "next/navigation"
 import { QRCodeSVG } from "qrcode.react"
+import YouTube from "react-youtube"
 
 import { useRoomSocket } from "../../../../hooks/useRoomSocket"
 
@@ -16,6 +17,23 @@ export default function HostRoomPage() {
   const router = useRouter()
 
   const [hostId, setHostId] = useState(null)
+  const [youtubeUrl, setYoutubeUrl] = useState("")
+  const playerRef = useRef(null)
+
+  function extractVideoId(url) {
+    const patterns = [
+      /[?&]v=([^&]+)/,
+      /youtu\.be\/([^?+]+)/,
+      /youtube\.com\/embed\/([^?]+)/,
+    ]
+    for (const pattern of patterns) {
+      const match = url.match(pattern)
+      if (match) return match[1]
+    }
+    return null
+  }
+
+  const videoId = extractVideoId(youtubeUrl)
 
   useEffect(() => {
     const storedHostId = localStorage.getItem("hostId")
@@ -54,6 +72,12 @@ export default function HostRoomPage() {
   )
 
   const hasCurrentBuzzer = Boolean(currentBuzzer)
+
+  useEffect(() => {
+    if (currentBuzzer && playerRef.current) {
+      playerRef.current.pauseVideo()
+    }
+  }, [currentBuzzer])
 
   function handleStartGame() {
     sendAction("start_game")
@@ -132,6 +156,16 @@ export default function HostRoomPage() {
             <p className="text-zinc-400 mt-2 mb-6">
               Les joueurs peuvent rejoindre le salon.
             </p>
+
+            <div className="mb-6">
+              <input
+                type="text"
+                value={youtubeUrl}
+                onChange={(e) => setYoutubeUrl(e.target.value)}
+                placeholder="Lien YouTube (optionnel)"
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
+              />
+            </div>
 
             <div className="flex justify-center mb-6">
               <QRCodeSVG
@@ -218,6 +252,16 @@ export default function HostRoomPage() {
             >
               Nouvelle partie
             </button>
+          </div>
+        )}
+
+        {videoId && !isFinished && (
+          <div className="rounded-3xl overflow-hidden mb-6">
+            <YouTube
+              videoId={videoId}
+              onReady={(e) => { playerRef.current = e.target }}
+              opts={{ width: "100%", playerVars: { autoplay: 0 } }}
+            />
           </div>
         )}
 
