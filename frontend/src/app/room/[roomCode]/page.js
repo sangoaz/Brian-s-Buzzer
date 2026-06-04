@@ -85,6 +85,7 @@ export default function PlayerRoomPage() {
   const isWaiting = status === "waiting"
   const isPlaying = status === "playing"
   const isFinished = status === "finished"
+  const isBlocked = roomState?.blocked_players?.includes(playerId) ?? false
 
 
   const sortedPlayers = [...players].sort(
@@ -180,8 +181,9 @@ export default function PlayerRoomPage() {
         {!isFinished && (
           <BuzzerButton
             onBuzz={handleBuzz}
-            disabled={!connected || hasBuzzed || !isPlaying}
+            disabled={!connected || hasBuzzed || !isPlaying || isBlocked}
             iAmTheBuzzer={iAmTheBuzzer}
+            isBlocked={isBlocked}
           />
         )}
 

@@ -7,7 +7,7 @@ from app.services.room_service import (
     join_room,
     get_room_state,
     buzz,
-    reset_buzzer,
+    next_round,
     clean_player_name,
     normalize_player_name,
     is_player_name_available,
@@ -139,20 +139,20 @@ class TestBuzz:
         assert rooms[room_code]["current_buzzer"] == first_player
 
 
-class TestResetBuzzer:
-    def test_reset_buzzer(self):
+class TestNextRound:
+    def test_next_round(self):
         room_code = create_room()["room_code"]
         player = join_room(room_code, "Kevin")["player"]
         buzz(room_code, player["id"])
 
-        result = reset_buzzer(room_code)
+        result = next_round(room_code)
 
         assert result["success"] is True
         assert result["room"]["current_buzzer"] is None
         assert rooms[room_code]["current_buzzer"] is None
 
     def test_reset_unknown_room_returns_error(self):
-        result = reset_buzzer("ABCD")
+        result = next_round("ABCD")
 
         assert result == {
             "success": False,

@@ -21,7 +21,7 @@ export default function ResetButton({
         mb-10
       "
     >
-      RESET
+      Manche suivante
     </button>
   )
 }

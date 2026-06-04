@@ -13,7 +13,7 @@ from app.services.room_service import (
     join_room,
     get_room_state,
     buzz,
-    reset_buzzer,
+    next_round,
     remove_player,
     kick_player,
 )
@@ -78,7 +78,7 @@ def buzz_room(room_code: str, player_id: str):
 # Route pour reset le buzzer
 @router.post("/{room_code}/reset", response_model=RoomStateResponse)
 def reset_room_buzzer(room_code: str, host_id: str):
-    result = reset_buzzer(room_code.upper(), host_id)
+    result = next_round(room_code.upper(), host_id)
 
     if not result["success"]:
         raise_service_error(result["error"])

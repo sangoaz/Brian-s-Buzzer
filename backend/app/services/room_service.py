@@ -1,5 +1,6 @@
 import random
 import string
+import time
 import uuid
 
 from app.constants import errors
@@ -32,6 +33,7 @@ def create_room(settings: dict = None) -> dict:
         "status": "waiting",
         "round": 1,
         "scores": {},
+        "blocked_players": {},
         "settings": settings
         or {
             "timer": None,
@@ -45,6 +47,7 @@ def create_room(settings: dict = None) -> dict:
         "room_code": room_code,
         "host_id": host_id,
         "status": "waiting",
+        "settings": rooms[room_code]["settings"],
     }
 
 
@@ -178,6 +181,7 @@ def restart_game(room_code: str, requester_id: str) -> dict:
     room["round"] = 1
     room["scores"] = {player_id: 0 for player_id in room["players"]}
     room["current_buzzer"] = None
+    room["blocked_players"] = {}
 
     return {
         "success": True,
@@ -218,14 +222,26 @@ def buzz(room_code: str, player_id: str) -> dict:
             "error": errors.BUZZER_ALREADY_LOCKED,
         }
 
+    # Vérifie si le joueur est bloqué suite à une mauvaise réponse
+    blocked_players = room.get("blocked_players", {})
+    if player_id in blocked_players:
+        if time.time() < blocked_players[player_id]:
+            return {
+                "success": False,
+                "error": errors.PLAYER_BLOCKED,
+            }
+        else:
+            # Le blocage a expiré, on nettoie
+            del blocked_players[player_id]
+
     # Dans le cas où personne n'a encore buzzé
     room["current_buzzer"] = player
 
     return {"success": True, "player": player}
 
 
-# Reset du buzzer
-def reset_buzzer(room_code: str, requester_id: str) -> dict:
+# Passe à la prochaine manche
+def next_round(room_code: str, requester_id: str) -> dict:
     room = rooms.get(room_code)
 
     if not room:
@@ -241,6 +257,11 @@ def reset_buzzer(room_code: str, requester_id: str) -> dict:
         }
 
     room["current_buzzer"] = None
+    room["round"] = room.get("round", 1) + 1
+
+    max_rounds = room["settings"].get("max_rounds")
+    if max_rounds and room["round"] > max_rounds:
+        room["status"] = "finished"
 
     return get_room_state(room_code)
 
@@ -362,6 +383,10 @@ def validate_answer(room_code: str, requester_id: str) -> dict:
     room["current_buzzer"] = None
     room["round"] = room.get("round", 1) + 1
 
+    max_rounds = room["settings"].get("max_rounds")
+    if max_rounds and room["round"] > max_rounds:
+        room["status"] = "finished"
+
     return {
         "success": True,
         "room": get_public_room(room),
@@ -390,7 +415,12 @@ def reject_answer(room_code: str, requester_id: str) -> dict:
             "error": errors.NO_CURRENT_BUZZER,
         }
 
+    buzzer_id = room["current_buzzer"]["id"]
     room["current_buzzer"] = None
+
+    # Si block_on_wrong est activé, bloque le joueur pendant 5 secondes
+    if room["settings"].get("block_on_wrong", False):
+        room["blocked_players"][buzzer_id] = time.time() + 5
 
     return {
         "success": True,
@@ -405,6 +435,11 @@ def reject_answer(room_code: str, requester_id: str) -> dict:
 
 # Transforme une room interne en room envoyable au frontend
 def get_public_room(room: dict) -> dict:
+    now = time.time()
+    active_blocked = [
+        pid for pid, until in room.get("blocked_players", {}).items() if until > now
+    ]
+
     return {
         "code": room["code"],
         "players": list(room["players"].values()),
@@ -412,6 +447,7 @@ def get_public_room(room: dict) -> dict:
         "status": room.get("status", "waiting"),
         "round": room.get("round", 1),
         "scores": room.get("scores", {}),
+        "blocked_players": active_blocked,
     }
 
 

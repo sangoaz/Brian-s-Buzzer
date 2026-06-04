@@ -4,7 +4,7 @@ from app.constants import events, errors
 from app.services.room_service import (
     buzz,
     get_room_state,
-    reset_buzzer,
+    next_round,
     remove_player,
     can_connect_to_room,
     start_game,
@@ -197,7 +197,7 @@ async def websocket_endpoint(
                 )
 
             elif action == "reset":
-                reset_result = reset_buzzer(room_code, player_id)
+                reset_result = next_round(room_code, player_id)
 
                 if not reset_result["success"]:
                     await websocket.send_json(
