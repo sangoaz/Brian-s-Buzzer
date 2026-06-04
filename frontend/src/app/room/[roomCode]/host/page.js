@@ -17,6 +17,7 @@ export default function HostRoomPage() {
   const router = useRouter()
 
   const [hostId, setHostId] = useState(null)
+  const [historyOpen, setHistoryOpen] = useState(false)
   const [youtubeUrl, setYoutubeUrl] = useState("")
   const playerRef = useRef(null)
 
@@ -314,33 +315,6 @@ export default function HostRoomPage() {
           disabled={!isPlaying}
         />
 
-        {(isPlaying || isFinished) && Object.keys(buzzHistory).length > 0 && (
-          <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 mb-6 text-left">
-            <h2 className="text-2xl font-black mb-4">Historique des buzzers</h2>
-            <ul className="space-y-3">
-              {Object.entries(buzzHistory)
-                .sort(([a], [b]) => Number(b) - Number(a))
-                .map(([round, buzzers]) => (
-                  <li key={round}>
-                    <p className="text-xs uppercase tracking-widest text-zinc-500 mb-1">
-                      Manche {round}
-                    </p>
-                    <div className="flex flex-wrap gap-2">
-                      {buzzers.map((buzzer, index) => (
-                        <span
-                          key={index}
-                          className="bg-zinc-800 rounded-lg px-3 py-1 text-sm font-bold"
-                        >
-                          {index + 1}. {buzzer.name}
-                        </span>
-                      ))}
-                    </div>
-                  </li>
-                ))}
-            </ul>
-          </div>
-        )}
-
         <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 mb-6 text-left">
           <h2 className="text-2xl font-black mb-4">
             Scores
@@ -382,6 +356,42 @@ export default function HostRoomPage() {
           players={players}
           onKickPlayer={handleKickPlayer}
         />
+
+        {(isPlaying || isFinished) && Object.keys(buzzHistory).length > 0 && (
+          <div className="rounded-3xl bg-zinc-900 border border-zinc-800 mb-6 text-left overflow-hidden">
+            <button
+              onClick={() => setHistoryOpen(v => !v)}
+              className="w-full flex items-center justify-between p-6 hover:bg-zinc-800 transition"
+            >
+              <h2 className="text-2xl font-black">Historique des buzzers</h2>
+              <span className="text-zinc-400 text-xl">{historyOpen ? "▲" : "▼"}</span>
+            </button>
+
+            {historyOpen && (
+              <ul className="space-y-3 px-6 pb-6">
+                {Object.entries(buzzHistory)
+                  .sort(([a], [b]) => Number(b) - Number(a))
+                  .map(([round, buzzers]) => (
+                    <li key={round}>
+                      <p className="text-xs uppercase tracking-widest text-zinc-500 mb-1">
+                        Manche {round}
+                      </p>
+                      <div className="flex flex-wrap gap-2">
+                        {buzzers.map((buzzer, index) => (
+                          <span
+                            key={index}
+                            className="bg-zinc-800 rounded-lg px-3 py-1 text-sm font-bold"
+                          >
+                            {index + 1}. {buzzer.name}
+                          </span>
+                        ))}
+                      </div>
+                    </li>
+                  ))}
+              </ul>
+            )}
+          </div>
+        )}
       </div>
     </main>
   )
