@@ -85,7 +85,18 @@ export default function PlayerRoomPage() {
   const isWaiting = status === "waiting"
   const isPlaying = status === "playing"
   const isFinished = status === "finished"
-  const isBlocked = roomState?.blocked_players?.includes(playerId) ?? false
+  const serverIsBlocked = roomState?.blocked_players?.includes(playerId) ?? false
+  const [localUnblocked, setLocalUnblocked] = useState(false)
+
+  useEffect(() => {
+    if (serverIsBlocked) {
+      setLocalUnblocked(false)
+      const timeout = setTimeout(() => setLocalUnblocked(true), 5000)
+      return () => clearTimeout(timeout)
+    }
+  }, [serverIsBlocked])
+
+  const isBlocked = serverIsBlocked && !localUnblocked
 
 
   const sortedPlayers = [...players].sort(
