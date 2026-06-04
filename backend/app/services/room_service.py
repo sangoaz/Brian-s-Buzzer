@@ -419,9 +419,15 @@ def reject_answer(room_code: str, requester_id: str) -> dict:
     buzzer_id = room["current_buzzer"]["id"]
     room["current_buzzer"] = None
 
+    # Si la pénalité est activée, le joueur perd un point si mauvaise réponse
+    if room["settings"].get("penalty_on_wrong", False):
+        current_score = room["scores"].get(buzzer_id, 0)
+        room["scores"][buzzer_id] = max(0, current_score - 1)
+
     # Si block_on_wrong est activé, bloque le joueur pendant 5 secondes
     if room["settings"].get("block_on_wrong", False):
-        room["blocked_players"][buzzer_id] = time.time() + 5
+        block_duration = room["settings"].get("block_duration", 5)
+        room["blocked_players"][buzzer_id] = time.time() + block_duration
 
     return {
         "success": True,

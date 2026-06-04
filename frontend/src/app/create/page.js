@@ -5,6 +5,7 @@ import { useState } from "react"
 import { createRoom } from "../../services/api"
 
 const ROUNDS_OPTIONS = [5, 10, 15, 20]
+const BLOCK_DURATION_OPTIONS = [3, 5, 10]
 
 export default function CreatePage() {
   const router = useRouter()
@@ -15,6 +16,9 @@ export default function CreatePage() {
   const [maxRounds, setMaxRounds] = useState(10)
 
   const [blockOnWrong, setBlockOnWrong] = useState(false)
+  const [blockDuration, setBlockDuration] = useState(5)
+
+  const [penaltyOnWrong, setPenaltyOnWrong] = useState(false)
 
   async function handleCreateRoom() {
     try {
@@ -24,6 +28,8 @@ export default function CreatePage() {
       const settings = {
         max_rounds: maxRoundsEnabled ? maxRounds : null,
         block_on_wrong: blockOnWrong,
+        block_duration: blockDuration,
+        penalty_on_wrong: penaltyOnWrong,
       }
 
       const data = await createRoom(settings)
@@ -90,11 +96,13 @@ export default function CreatePage() {
         </div>
 
         {/* Bloquer le buzzer sur mauvaise réponse */}
-        <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 mb-8">
-          <div className="flex items-center justify-between">
+        <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 mb-4">
+          <div className="flex items-center justify-between mb-4">
             <div>
               <h2 className="font-black text-lg">Bloquer sur mauvaise réponse</h2>
-              <p className="text-zinc-400 text-sm">Le joueur ne peut plus buzzer pendant 5s</p>
+              <p className="text-zinc-400 text-sm">
+                Le joueur ne peut plus buzzer pendant {blockDuration}s
+              </p>
             </div>
 
             <button
@@ -105,6 +113,45 @@ export default function CreatePage() {
             >
               <div className={`w-5 h-5 bg-white rounded-full mx-auto transition-transform ${
                 blockOnWrong ? "translate-x-3" : "-translate-x-3"
+              }`} />
+            </button>
+          </div>
+
+          {blockOnWrong && (
+            <div className="flex gap-2">
+              {BLOCK_DURATION_OPTIONS.map((option) => (
+                <button
+                  key={option}
+                  onClick={() => setBlockDuration(option)}
+                  className={`flex-1 py-2 rounded-xl font-bold text-sm transition ${
+                    blockDuration === option
+                      ? "bg-red-600 text-white"
+                      : "bg-zinc-800 text-zinc-400 hover:bg-zinc-700"
+                  }`}
+                >
+                  {option}s
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Pénalité sur mauvaise réponse */}
+        <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-black text-lg">Pénalité sur mauvaise réponse</h2>
+              <p className="text-zinc-400 text-sm">Le joueur perd 1 point</p>
+            </div>
+
+            <button
+              onClick={() => setPenaltyOnWrong(v => !v)}
+              className={`w-12 h-6 rounded-full transition ${
+                penaltyOnWrong ? "bg-red-600" : "bg-zinc-700"
+              }`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full mx-auto transition-transform ${
+                penaltyOnWrong ? "translate-x-3" : "-translate-x-3"
               }`} />
             </button>
           </div>

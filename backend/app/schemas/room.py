@@ -27,3 +27,5 @@ class RoomStateResponse(BaseModel):
 class RoomSettings(BaseModel):
     max_rounds: int | None = None
     block_on_wrong: bool = False
+    block_duration: int = 5
+    penalty_on_wrong: bool = False
