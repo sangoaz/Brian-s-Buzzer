@@ -86,11 +86,6 @@ export default function PlayerRoomPage() {
   const isPlaying = status === "playing"
   const isFinished = status === "finished"
 
-  useEffect(() => {
-    if (!isFinished) return
-
-    clearPlayerSession()
-  }, [isFinished])
 
   const sortedPlayers = [...players].sort(
     (a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0)
