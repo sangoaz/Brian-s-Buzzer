@@ -380,7 +380,13 @@ export default function HostRoomPage() {
                         {buzzers.map((buzzer, index) => (
                           <span
                             key={index}
-                            className="bg-zinc-800 rounded-lg px-3 py-1 text-sm font-bold"
+                            className={`rounded-lg px-3 py-1 text-sm font-bold ${
+                              buzzer.result === "correct"
+                                ? "bg-green-600/20 text-green-400"
+                                : buzzer.result === "wrong"
+                                ? "bg-red-600/20 text-red-400"
+                                : "bg-zinc-800 text-zinc-400"
+                            }`}
                           >
                             {index + 1}. {buzzer.name}
                           </span>

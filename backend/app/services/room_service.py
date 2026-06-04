@@ -242,7 +242,13 @@ def buzz(room_code: str, player_id: str) -> dict:
     round_num = room.get("round", 1)
     if round_num not in room["buzz_history"]:
         room["buzz_history"][round_num] = []
-    room["buzz_history"][round_num].append({"id": player["id"], "name": player["name"]})
+    room["buzz_history"][round_num].append(
+        {
+            "id": player["id"],
+            "name": player["name"],
+            "result": "pending",
+        }
+    )
 
     return {"success": True, "player": player}
 
@@ -390,6 +396,12 @@ def validate_answer(room_code: str, requester_id: str) -> dict:
     room["scores"][player_id] = room["scores"].get(player_id, 0) + 1
     room["current_buzzer"] = None
     room["blocked_players"] = {}
+
+    round_num = room.get("round", 1)
+    for entry in reversed(room["buzz_history"].get(round_num, [])):
+        if entry["id"] == player_id:
+            entry["result"] = "correct"
+            break
     room["round"] = room.get("round", 1) + 1
 
     max_rounds = room["settings"].get("max_rounds")
@@ -432,10 +444,16 @@ def reject_answer(room_code: str, requester_id: str) -> dict:
         current_score = room["scores"].get(buzzer_id, 0)
         room["scores"][buzzer_id] = max(0, current_score - 1)
 
-    # Si block_on_wrong est activé, bloque le joueur pendant 5 secondes
+    # Si block_on_wrong est activé, bloque le joueur pendant X secondes
     if room["settings"].get("block_on_wrong", False):
         block_duration = room["settings"].get("block_duration", 5)
         room["blocked_players"][buzzer_id] = time.time() + block_duration
+
+    round_num = room.get("round", 1)
+    for entry in reversed(room["buzz_history"].get(round_num, [])):
+        if entry["id"] == buzzer_id:
+            entry["result"] = "wrong"
+            break
 
     return {
         "success": True,
