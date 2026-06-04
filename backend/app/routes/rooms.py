@@ -6,6 +6,7 @@ from app.schemas.room import (
     PlayerJoinResponse,
     RoomCreateResponse,
     RoomStateResponse,
+    RoomSettings,
 )
 from app.services.room_service import (
     create_room,
@@ -24,8 +25,8 @@ router = APIRouter(prefix="/rooms", tags=["Rooms"])
 
 # Route de création de salon
 @router.post("", response_model=RoomCreateResponse, status_code=201)
-def create_new_room():
-    return create_room()
+def create_new_room(payload: RoomSettings):
+    return create_room(payload.model_dump())
 
 
 # Route pour rejoindre un salon

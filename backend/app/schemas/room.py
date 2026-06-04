@@ -5,6 +5,7 @@ class RoomCreateResponse(BaseModel):
     room_code: str
     host_id: str
     success: bool
+    settings: dict
 
 
 class PlayerJoinRequest(BaseModel):
@@ -21,3 +22,9 @@ class RoomStateResponse(BaseModel):
     room_code: str
     players: list[dict]
     current_buzzer: dict | None
+
+
+class RoomSettings(BaseModel):
+    timer: int | None = None
+    max_rounds: int | None = None
+    block_on_wrong: bool = False

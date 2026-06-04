@@ -1,8 +1,12 @@
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
 
-export async function createRoom() {
+export async function createRoom(settings) {
   const response = await fetch(`${API_BASE_URL}/rooms`, {
     method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(settings),
   })
 
   if (!response.ok) {

@@ -14,7 +14,7 @@ def generate_room_code(length: int = 4) -> str:
 
 
 # Créée le salon dans rooms
-def create_room() -> dict:
+def create_room(settings: dict = None) -> dict:
     # Génère un code de salon
     room_code = generate_room_code()
 
@@ -32,6 +32,12 @@ def create_room() -> dict:
         "status": "waiting",
         "round": 1,
         "scores": {},
+        "settings": settings
+        or {
+            "timer": None,
+            "max_rounds": None,
+            "block_on_wrong": False,
+        },
     }
 
     return {
