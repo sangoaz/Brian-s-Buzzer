@@ -101,10 +101,12 @@ export default function HostRoomPage() {
 
   function handleValidateAnswer() {
     sendAction("validate_answer")
+    if (playerRef.current) playerRef.current.playVideo()
   }
 
   function handleRejectAnswer() {
     sendAction("reject_answer")
+    if (playerRef.current) playerRef.current.playVideo()
   }
 
   async function handleKickPlayer(playerId) {
