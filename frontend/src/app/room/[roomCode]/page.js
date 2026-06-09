@@ -39,6 +39,7 @@ export default function PlayerRoomPage() {
     connected,
     error,
     kicked,
+    roomClosed,
     sendAction,
   } = useRoomSocket({
     roomCode,
@@ -51,6 +52,12 @@ export default function PlayerRoomPage() {
     clearPlayerSession()
     router.push("/join")
   }, [kicked, router])
+
+  useEffect(() => {
+    if (!roomClosed) return
+    clearPlayerSession()
+    router.push("/join")
+  }, [roomClosed, router])
 
   function handleBuzz() {
     sendAction("buzz")

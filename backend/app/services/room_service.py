@@ -9,6 +9,9 @@ from app.constants import errors
 # Stockage des salons en mémoire dans un dictionnaire Python
 rooms = {}
 
+#====================
+# Gestion de la room
+#====================
 
 # Génère un code aléatoire de 4 Caractères
 def generate_room_code(length: int = 4) -> str:
@@ -56,6 +59,50 @@ def create_room(settings: dict = None) -> dict:
     }
 
 
+# Lire l'état du salon
+def get_room_state(room_code: str):
+    room = rooms.get(room_code)
+
+    if not room:
+        return {
+            "success": False,
+            "error": errors.ROOM_NOT_FOUND,
+        }
+
+    return {
+        "success": True,
+        "room": get_public_room(room),
+    }
+
+
+# Supprimer la room
+def close_room(room_code: str, requester_id: str) -> dict:
+
+    room = rooms.get(room_code)
+
+    if not room:
+        return {
+            "success": False,
+            "error": errors.ROOM_NOT_FOUND,
+        }
+    
+    if not can_manage_room(room, requester_id):
+        return {
+            "success": False,
+            "error": errors.NOT_HOST_ACTION,
+        }
+    
+    del rooms[room_code]
+    delete_room(room_code)
+
+    return {
+        "success": True,
+    }
+
+#=========================
+# Utilisateurs de la room
+#=========================
+
 # Rejoindre un salon
 def join_room(room_code: str, player_name: str) -> dict:
     room = rooms.get(room_code)
@@ -65,12 +112,12 @@ def join_room(room_code: str, player_name: str) -> dict:
             "success": False,
             "error": errors.ROOM_NOT_FOUND,
         }
-    
+
     if room["status"] != "waiting" and room["settings"].get("lock_on_start", False):
         return {
-            "success": False, 
+            "success": False,
             "error": errors.GAME_IN_PROGRESS,
-            }
+        }
 
     cleaned_player_name = clean_player_name(player_name)
     normalized_player_name = normalize_player_name(player_name)
@@ -103,8 +150,8 @@ def join_room(room_code: str, player_name: str) -> dict:
     return {"success": True, "player": player}
 
 
-# Lire l'état du salon
-def get_room_state(room_code: str):
+# Déconnecter le joueur
+def remove_player(room_code: str, player_id: str) -> dict:
     room = rooms.get(room_code)
 
     if not room:
@@ -113,11 +160,92 @@ def get_room_state(room_code: str):
             "error": errors.ROOM_NOT_FOUND,
         }
 
+    if player_id not in room["players"]:
+        return {
+            "success": False,
+            "error": errors.PLAYER_NOT_FOUND,
+        }
+
+    room["scores"].pop(player_id, None)
+    room["players"].pop(player_id)
+
+    current_buzzer = room.get("current_buzzer")
+
+    if current_buzzer and current_buzzer["id"] == player_id:
+        room["current_buzzer"] = None
+
+    # Sauvegarde de l'état de la room en base de donnée
+    save_room(room_code, room, room["last_activity"])
+
     return {
         "success": True,
         "room": get_public_room(room),
     }
 
+
+# Fonction permettant à l'host de kick un joueur
+def kick_player(room_code: str, requester_id: str, player_id: str) -> dict:
+    room = rooms.get(room_code)
+
+    if not room:
+        return {
+            "success": False,
+            "error": errors.ROOM_NOT_FOUND,
+        }
+
+    if not can_manage_room(room, requester_id):
+        return {
+            "success": False,
+            "error": errors.NOT_HOST_ACTION,
+        }
+
+    if player_id not in room["players"]:
+        return {
+            "success": False,
+            "error": errors.PLAYER_NOT_FOUND,
+        }
+
+    room["scores"].pop(player_id, None)
+    room["players"].pop(player_id, None)
+
+    current_buzzer = room.get("current_buzzer")
+
+    if current_buzzer and current_buzzer["id"] == player_id:
+        room["current_buzzer"] = None
+
+    # Sauvegarde de l'état de la room en base de donnée
+    save_room(room_code, room, room["last_activity"])
+
+    return {
+        "success": True,
+        "room": get_public_room(room),
+    }
+
+
+# Vérifier si un pseudo existe déjà dans le salon
+def is_player_name_available(room, player_name: str) -> bool:
+    for player in room["players"].values():
+        if player["name"].lower() == player_name.lower():
+            return False
+
+    return True
+
+
+# Nettoyer le pseudo pour l'affichage
+def clean_player_name(player_name: str) -> str:
+    words = player_name.split()
+    return " ".join(words)
+
+
+# Normaliser le pseudo pour les comparaisons
+def normalize_player_name(player_name: str) -> str:
+    cleaned_name = clean_player_name(player_name)
+    return cleaned_name.lower()
+
+
+#=====================
+# Gestion des parties
+#=====================
 
 # Commencer la partie
 def start_game(room_code: str, requester_id: str) -> dict:
@@ -148,7 +276,7 @@ def start_game(room_code: str, requester_id: str) -> dict:
     }
 
 
-# Finir la parte
+# Finir la partie
 def end_game(room_code: str, requester_id: str) -> dict:
     room = rooms.get(room_code)
 
@@ -313,99 +441,6 @@ def next_round(room_code: str, requester_id: str) -> dict:
     return get_room_state(room_code)
 
 
-# Vérifier si un pseudo existe déjà dans le salon
-def is_player_name_available(room, player_name: str) -> bool:
-    for player in room["players"].values():
-        if player["name"].lower() == player_name.lower():
-            return False
-
-    return True
-
-
-# Nettoyer le pseudo pour l'affichage
-def clean_player_name(player_name: str) -> str:
-    words = player_name.split()
-    return " ".join(words)
-
-
-# Normaliser le pseudo pour les comparaisons
-def normalize_player_name(player_name: str) -> str:
-    cleaned_name = clean_player_name(player_name)
-    return cleaned_name.lower()
-
-
-# Déconnecter le joueur
-def remove_player(room_code: str, player_id: str) -> dict:
-    room = rooms.get(room_code)
-
-    if not room:
-        return {
-            "success": False,
-            "error": errors.ROOM_NOT_FOUND,
-        }
-
-    if player_id not in room["players"]:
-        return {
-            "success": False,
-            "error": errors.PLAYER_NOT_FOUND,
-        }
-
-    room["scores"].pop(player_id, None)
-    room["players"].pop(player_id)
-
-    current_buzzer = room.get("current_buzzer")
-
-    if current_buzzer and current_buzzer["id"] == player_id:
-        room["current_buzzer"] = None
-
-    # Sauvegarde de l'état de la room en base de donnée
-    save_room(room_code, room, room["last_activity"])
-
-    return {
-        "success": True,
-        "room": get_public_room(room),
-    }
-
-
-# Fonction permettant à l'host de kick un joueur
-def kick_player(room_code: str, requester_id: str, player_id: str) -> dict:
-    room = rooms.get(room_code)
-
-    if not room:
-        return {
-            "success": False,
-            "error": errors.ROOM_NOT_FOUND,
-        }
-
-    if not can_manage_room(room, requester_id):
-        return {
-            "success": False,
-            "error": errors.NOT_HOST_ACTION,
-        }
-
-    if player_id not in room["players"]:
-        return {
-            "success": False,
-            "error": errors.PLAYER_NOT_FOUND,
-        }
-
-    room["scores"].pop(player_id, None)
-    room["players"].pop(player_id, None)
-
-    current_buzzer = room.get("current_buzzer")
-
-    if current_buzzer and current_buzzer["id"] == player_id:
-        room["current_buzzer"] = None
-
-    # Sauvegarde de l'état de la room en base de donnée
-    save_room(room_code, room, room["last_activity"])
-
-    return {
-        "success": True,
-        "room": get_public_room(room),
-    }
-
-
 # Fonction permettant à l'host de valider une réponse
 def validate_answer(room_code: str, requester_id: str) -> dict:
     room = rooms.get(room_code)
@@ -534,7 +569,7 @@ def get_public_room(room: dict) -> dict:
     }
 
 
-# Vérifier que celui qui demande une action de gestion est bien l’hôte du salon
+# Vérifier que celui qui demande une action de gestion est bien l'hôte du salon
 def can_manage_room(room: dict, requester_id: str) -> bool:
     return room.get("host_id") == requester_id
 
@@ -564,6 +599,10 @@ def can_connect_to_room(room_code: str, connection_id: str) -> dict:
     }
 
 
+# =========================
+# Maintenance
+# =========================
+
 TTL_SECONDS = 30 * 60  # 30 minutes
 
 
@@ -583,6 +622,7 @@ def cleanup_inactive_rooms():
     for code in to_delete:
         del rooms[code]
         delete_room(code)
+
 
 # Restaurer une room au démarage du server
 def restore_rooms():

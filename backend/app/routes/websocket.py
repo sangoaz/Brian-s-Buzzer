@@ -12,6 +12,7 @@ from app.services.room_service import (
     reject_answer,
     end_game,
     restart_game,
+    close_room,
 )
 from app.websocket.manager import manager
 
@@ -215,6 +216,26 @@ async def websocket_endpoint(
                     {
                         "type": events.RESET,
                         "room": room_state,
+                    },
+                )
+
+            # Fermeture de la room
+            elif action == "close_room":
+                closed_result = close_room(room_code, player_id)
+
+                if not closed_result["success"]:
+                    await websocket.send_json(
+                        {
+                            "type": events.ERROR,
+                            "error": closed_result["error"],
+                        }
+                    )
+                    continue
+
+                await manager.broadcast(
+                    room_code,
+                    {
+                        "type": events.ROOM_CLOSED,
                     },
                 )
 

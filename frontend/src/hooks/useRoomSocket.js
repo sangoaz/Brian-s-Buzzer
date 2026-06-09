@@ -15,6 +15,7 @@ import {
   ANSWER_VALIDATED,
   GAME_FINISHED,
   GAME_RESTARTED,
+  ROOM_CLOSED,
 } from "../app/constants/events"
 
 export function useRoomSocket({ roomCode, playerId }) {
@@ -27,6 +28,8 @@ export function useRoomSocket({ roomCode, playerId }) {
   const [kicked, setKicked] = useState(false)
   const [retryCount, setRetryCount] = useState(0)     // déclenche le useEffect
   const [retryAttempt, setRetryAttempt] = useState(0) // calcule le délai
+  const [roomClosed, setRoomClosed] = useState(false)
+  const shouldReconnect = useRef(true)
 
   useEffect(() => {
     if (!roomCode || !playerId) return
@@ -53,6 +56,7 @@ export function useRoomSocket({ roomCode, playerId }) {
 
     ws.onclose = () => {
       setConnected(false)
+      if (!shouldReconnect.current) return
       setRetryAttempt(n => n + 1)  // ← délai de plus en plus long
       setTimeout(() => {
         setRetryCount(n => n + 1)  // ← déclenche la reconnexion
@@ -78,6 +82,12 @@ export function useRoomSocket({ roomCode, playerId }) {
           setKicked(true)
         }
 
+        return
+      }
+
+      if (message.type === ROOM_CLOSED) {
+        shouldReconnect.current = false
+        setRoomClosed(true)
         return
       }
 
@@ -126,6 +136,7 @@ export function useRoomSocket({ roomCode, playerId }) {
     connected,
     error,
     kicked,
+    roomClosed,
     sendAction,
   }
 }

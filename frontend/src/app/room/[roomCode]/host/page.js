@@ -52,6 +52,7 @@ export default function HostRoomPage() {
     roomState,
     connected,
     error,
+    roomClosed,
     sendAction,
   } = useRoomSocket({
     roomCode,
@@ -99,6 +100,19 @@ export default function HostRoomPage() {
     const confirmed = window.confirm("Lancer une nouvelle partie ? Les scores seront remis à zéro.")
     if (!confirmed) return
     sendAction("restart_game")
+  }
+
+  useEffect(() => {
+    if (!roomClosed) return
+    localStorage.removeItem("hostId")
+    localStorage.removeItem("hostRoomCode")
+    router.push("/")
+  }, [roomClosed, router])
+
+  function handleCloseRoom() {
+    const confirmed = window.confirm("Fermer le salon ? Tous les joueurs seront déconnectés.")
+    if (!confirmed) return
+    sendAction("close_room")
   }
 
   function handleValidateAnswer() {
@@ -356,6 +370,13 @@ export default function HostRoomPage() {
           players={players}
           onKickPlayer={handleKickPlayer}
         />
+
+        <button
+          onClick={handleCloseRoom}
+          className="w-full mt-2 mb-6 text-sm text-zinc-500 hover:text-red-400 transition"
+        >
+          Fermer le salon
+        </button>
 
         {(isPlaying || isFinished) && Object.keys(buzzHistory).length > 0 && (
           <div className="rounded-3xl bg-zinc-900 border border-zinc-800 mb-6 text-left overflow-hidden">
