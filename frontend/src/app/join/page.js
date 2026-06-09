@@ -4,7 +4,7 @@ import { Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import { joinRoom } from "../../services/api"
-import { savePlayerSession } from "../../utils/storage"
+import { savePlayerSession, getPlayerSession } from "../../utils/storage"
 import { ERROR_MESSAGES } from "../constants/errors"
 
 function JoinForm() {
@@ -20,6 +20,9 @@ function JoinForm() {
     const code = searchParams.get("code")
     if (code) setRoomCode(code.toUpperCase())
   }, [searchParams])
+
+  const { playerId, playerName: savedName, roomCode: savedRoomCode } = getPlayerSession()
+  const hasExistingSession = Boolean(playerId && savedName && savedRoomCode)
 
   async function handleJoinRoom(event) {
     event.preventDefault()
@@ -51,6 +54,19 @@ function JoinForm() {
 
   return (
     <main className="min-h-screen flex items-center justify-center bg-zinc-950 text-white px-6">
+      <div className="w-full max-w-md">
+      {hasExistingSession && (
+        <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 mb-6 text-center">
+          <p className="text-zinc-400 text-sm mb-1">Partie en cours</p>
+          <p className="font-black text-lg mb-4">{savedName} · {savedRoomCode}</p>
+          <button
+            onClick={() => router.push(`/room/${savedRoomCode}`)}
+            className="w-full bg-red-600 hover:bg-red-700 transition rounded-2xl py-3 font-bold"
+          >
+            Reprendre ma partie
+          </button>
+        </div>
+      )}
       <form onSubmit={handleJoinRoom} className="w-full max-w-md">
         <h1 className="text-4xl font-black mb-4 text-center">
           Rejoindre une partie
@@ -81,6 +97,7 @@ function JoinForm() {
           {loading ? "Connexion..." : "Rejoindre"}
         </button>
       </form>
+      </div>
     </main>
   )
 }
