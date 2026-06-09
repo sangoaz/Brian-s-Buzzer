@@ -163,7 +163,7 @@ export default function CreatePage() {
         <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 mb-8">
           <div className="flex items-center justify-between">
             <div>
-              <h2 className="font-black text-lg">Verrouiller à la manche</h2>
+              <h2 className="font-black text-lg">Verrouiller la partie</h2>
               <p className="text-zinc-400 text-sm">Empêche de rejoindre une partie en cours</p>
             </div>
 
