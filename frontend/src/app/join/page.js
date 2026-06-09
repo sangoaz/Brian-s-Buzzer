@@ -4,7 +4,7 @@ import { Suspense } from "react"
 import { useRouter, useSearchParams } from "next/navigation"
 import { useState, useEffect } from "react"
 import { joinRoom } from "../../services/api"
-import { savePlayerSession, getPlayerSession } from "../../utils/storage"
+import { savePlayerSession, getPlayerSession, clearPlayerSession } from "../../utils/storage"
 import { ERROR_MESSAGES } from "../constants/errors"
 
 function JoinForm() {
@@ -21,8 +21,25 @@ function JoinForm() {
     if (code) setRoomCode(code.toUpperCase())
   }, [searchParams])
 
+  const [sessionValid, setSessionValid] = useState(true)
   const { playerId, playerName: savedName, roomCode: savedRoomCode } = getPlayerSession()
   const hasExistingSession = Boolean(playerId && savedName && savedRoomCode)
+
+  useEffect(() => {
+    if (!hasExistingSession) return
+
+    fetch(`${process.env.NEXT_PUBLIC_API_URL}/rooms/${savedRoomCode}`)
+      .then(res => {
+        if (!res.ok) {
+          clearPlayerSession()
+          setSessionValid(false)
+        }
+      })
+      .catch(() => {
+        clearPlayerSession()
+        setSessionValid(false)
+      })
+  }, [])
 
   async function handleJoinRoom(event) {
     event.preventDefault()
@@ -55,7 +72,7 @@ function JoinForm() {
   return (
     <main className="min-h-screen flex items-center justify-center bg-zinc-950 text-white px-6">
       <div className="w-full max-w-md">
-      {hasExistingSession && (
+      {hasExistingSession && sessionValid && (
         <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 mb-6 text-center">
           <p className="text-zinc-400 text-sm mb-1">Partie en cours</p>
           <p className="font-black text-lg mb-4">{savedName} · {savedRoomCode}</p>
