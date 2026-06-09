@@ -100,6 +100,7 @@ export function useRoomSocket({ roomCode, playerId }) {
 
     return () => {
       clearInterval(interval)
+      ws.onclose = null
       ws.close()
       socketRef.current = null
     }

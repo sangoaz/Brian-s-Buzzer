@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 from app.routes.rooms import router as rooms_router
 from app.routes.websocket import router as websocket_router
-from app.services.room_service import cleanup_inactive_rooms
+from app.services.room_service import cleanup_inactive_rooms, restore_rooms
 
 
 async def run_cleanup_task():
@@ -16,6 +16,7 @@ async def run_cleanup_task():
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    restore_rooms()
     asyncio.create_task(run_cleanup_task())
     yield
 

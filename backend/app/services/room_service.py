@@ -3,6 +3,7 @@ import string
 import time
 import uuid
 
+from app.database import save_room, load_all_rooms, delete_room
 from app.constants import errors
 
 # Stockage des salons en mémoire dans un dictionnaire Python
@@ -42,6 +43,9 @@ def create_room(settings: dict = None) -> dict:
         "buzz_history": {},
         "last_activity": time.time(),
     }
+
+    # Sauvegarde de l'état de la room en base de donnée
+    save_room(room_code, rooms[room_code], rooms[room_code]["last_activity"])
 
     return {
         "success": True,
@@ -87,6 +91,9 @@ def join_room(room_code: str, player_name: str) -> dict:
     room["players"][player_id] = player
     room["scores"][player_id] = 0
 
+    # Sauvegarde de l'état de la room en base de donnée
+    save_room(room_code, room, room["last_activity"])
+
     return {"success": True, "player": player}
 
 
@@ -126,6 +133,9 @@ def start_game(room_code: str, requester_id: str) -> dict:
     room["current_buzzer"] = None
     touch_room(room)
 
+    # Sauvegarde de l'état de la room en base de donnée
+    save_room(room_code, room, room["last_activity"])
+
     return {
         "success": True,
         "room": get_public_room(room),
@@ -150,6 +160,9 @@ def end_game(room_code: str, requester_id: str) -> dict:
 
     room["status"] = "finished"
     room["current_buzzer"] = None
+    touch_room(room)
+    # Sauvegarde de l'état de la room en base de donnée
+    save_room(room_code, room, room["last_activity"])
 
     return {
         "success": True,
@@ -185,6 +198,9 @@ def restart_game(room_code: str, requester_id: str) -> dict:
     room["current_buzzer"] = None
     room["blocked_players"] = {}
     room["buzz_history"] = {}
+
+    # Sauvegarde de l'état de la room en base de donnée
+    save_room(room_code, room, room["last_activity"])
 
     return {
         "success": True,
@@ -254,6 +270,9 @@ def buzz(room_code: str, player_id: str) -> dict:
 
     touch_room(room)
 
+    # Sauvegarde de l'état de la room en base de donnée
+    save_room(room_code, room, room["last_activity"])
+
     return {"success": True, "player": player}
 
 
@@ -281,6 +300,9 @@ def next_round(room_code: str, requester_id: str) -> dict:
     max_rounds = room["settings"].get("max_rounds")
     if max_rounds and room["round"] > max_rounds:
         room["status"] = "finished"
+
+    # Sauvegarde de l'état de la room en base de donnée
+    save_room(room_code, room, room["last_activity"])
 
     return get_room_state(room_code)
 
@@ -330,6 +352,9 @@ def remove_player(room_code: str, player_id: str) -> dict:
     if current_buzzer and current_buzzer["id"] == player_id:
         room["current_buzzer"] = None
 
+    # Sauvegarde de l'état de la room en base de donnée
+    save_room(room_code, room, room["last_activity"])
+
     return {
         "success": True,
         "room": get_public_room(room),
@@ -365,6 +390,9 @@ def kick_player(room_code: str, requester_id: str, player_id: str) -> dict:
 
     if current_buzzer and current_buzzer["id"] == player_id:
         room["current_buzzer"] = None
+
+    # Sauvegarde de l'état de la room en base de donnée
+    save_room(room_code, room, room["last_activity"])
 
     return {
         "success": True,
@@ -415,6 +443,9 @@ def validate_answer(room_code: str, requester_id: str) -> dict:
 
     touch_room(room)
 
+    # Sauvegarde de l'état de la room en base de donnée
+    save_room(room_code, room, room["last_activity"])
+
     return {
         "success": True,
         "room": get_public_room(room),
@@ -463,6 +494,9 @@ def reject_answer(room_code: str, requester_id: str) -> dict:
             break
 
     touch_room(room)
+
+    # Sauvegarde de l'état de la room en base de donnée
+    save_room(room_code, room, room["last_activity"])
 
     return {
         "success": True,
@@ -542,3 +576,12 @@ def cleanup_inactive_rooms():
     ]
     for code in to_delete:
         del rooms[code]
+        delete_room(code)
+
+# Restaurer une room au démarage du server
+def restore_rooms():
+    loaded = load_all_rooms()
+    for room in loaded.values():
+        if "buzz_history" in room:
+            room["buzz_history"] = {int(k): v for k, v in room["buzz_history"].items()}
+    rooms.update(loaded)
