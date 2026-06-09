@@ -159,7 +159,6 @@ export default function CreatePage() {
           </div>
         </div>
 
-
         {/* Verrouiller à la manche */}
         <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 mb-8">
           <div className="flex items-center justify-between">
@@ -180,9 +179,6 @@ export default function CreatePage() {
             </button>
           </div>
         </div>
-
-
-
 
         {error && (
           <p className="text-red-400 mb-4 text-center">{error}</p>
