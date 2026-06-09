@@ -65,6 +65,12 @@ def join_room(room_code: str, player_name: str) -> dict:
             "success": False,
             "error": errors.ROOM_NOT_FOUND,
         }
+    
+    if room["status"] != "waiting" and room["settings"].get("lock_on_start", False):
+        return {
+            "success": False, 
+            "error": errors.GAME_IN_PROGRESS,
+            }
 
     cleaned_player_name = clean_player_name(player_name)
     normalized_player_name = normalize_player_name(player_name)

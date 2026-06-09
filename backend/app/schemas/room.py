@@ -29,3 +29,4 @@ class RoomSettings(BaseModel):
     block_on_wrong: bool = False
     block_duration: int = 5
     penalty_on_wrong: bool = False
+    lock_on_start: bool = False

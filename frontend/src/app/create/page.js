@@ -19,6 +19,7 @@ export default function CreatePage() {
   const [blockDuration, setBlockDuration] = useState(5)
 
   const [penaltyOnWrong, setPenaltyOnWrong] = useState(false)
+  const [lockOnStart, setLockOnStart] = useState(false)
 
   async function handleCreateRoom() {
     try {
@@ -30,6 +31,7 @@ export default function CreatePage() {
         block_on_wrong: blockOnWrong,
         block_duration: blockDuration,
         penalty_on_wrong: penaltyOnWrong,
+        lock_on_start: lockOnStart,
       }
 
       const data = await createRoom(settings)
@@ -137,7 +139,7 @@ export default function CreatePage() {
         </div>
 
         {/* Pénalité sur mauvaise réponse */}
-        <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 mb-8">
+        <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 mb-4">
           <div className="flex items-center justify-between">
             <div>
               <h2 className="font-black text-lg">Pénalité sur mauvaise réponse</h2>
@@ -156,6 +158,31 @@ export default function CreatePage() {
             </button>
           </div>
         </div>
+
+
+        {/* Verrouiller à la manche */}
+        <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="font-black text-lg">Verrouiller à la manche</h2>
+              <p className="text-zinc-400 text-sm">Empêche de rejoindre une partie en cours</p>
+            </div>
+
+            <button
+              onClick={() => setLockOnStart(v => !v)}
+              className={`w-12 h-6 rounded-full transition ${
+                lockOnStart ? "bg-red-600" : "bg-zinc-700"
+              }`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full mx-auto transition-transform ${
+                lockOnStart ? "translate-x-3" : "-translate-x-3"
+              }`} />
+            </button>
+          </div>
+        </div>
+
+
+
 
         {error && (
           <p className="text-red-400 mb-4 text-center">{error}</p>
