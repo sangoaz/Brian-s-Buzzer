@@ -1,6 +1,19 @@
 # Brian's Buzzer
 
-Brian's Buzzer est une application de buzzer en temps réel permettant à plusieurs joueurs de rejoindre une salle et de répondre à des quiz, blind tests ou jeux en soirée.
+Brian's Buzzer est une application de buzzer temps réel permettant à plusieurs participants de rejoindre une session et de synchroniser instantanément leurs actions entre plusieurs appareils.
+
+## Aperçu
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="images/Brian's_Buzzer_Host_Page.png" width="500">
+    </td>
+    <td align="center">
+      <img src="images/Brian's_Buzzer_Buzz_Player.png" width="250">
+    </td>
+  </tr>
+</table>
 
 ## Fonctionnalités
 
@@ -10,6 +23,16 @@ Brian's Buzzer est une application de buzzer en temps réel permettant à plusie
 - Blocage des autres buzzers lorsqu'un joueur a buzzé
 - Affichage en temps réel du joueur ayant buzzé
 - Synchronisation instantanée entre tous les participants
+
+## Architecture temps réel
+
+L'application utilise WebSockets pour maintenir une connexion persistante entre les clients et le serveur FastAPI.
+
+Lorsqu'un joueur appuie sur le buzzer :
+
+1. L'événement est envoyé au serveur via WebSocket.
+2. Le serveur valide le premier buzzer reçu.
+3. L'information est immédiatement diffusée aux autres participants connectés.
 
 ## Stack technique
 
