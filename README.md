@@ -10,7 +10,7 @@ Brian's Buzzer est une application de buzzer temps réel permettant à plusieurs
       <img src="images/Brian's_Buzzer_Host_Page.png" width="500">
     </td>
     <td align="center">
-      <img src="images/Brian's_Buzzer_Buzz_Player.png" width="250">
+      <img src="images/Brian's_Buzzer_Buzz_player.png" width="250">
     </td>
   </tr>
 </table>
