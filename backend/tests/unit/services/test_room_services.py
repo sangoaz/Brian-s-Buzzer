@@ -9,6 +9,7 @@ from app.services.room_service import (
     buzz,
     next_round,
     validate_answer,
+    reject_answer,
     assign_player_team,
     clean_player_name,
     normalize_player_name,
@@ -373,3 +374,54 @@ class TestTeamScores:
 
             assert result["room"]["teams"] == []
             assert result["room"]["team_scores"] == {}
+
+
+class TestRejectAnswerTeamBlocking:
+    def test_reject_answer_blocks_whole_team_when_teams_enabled(self):
+        with patch("app.services.room_service.save_room"):
+            room = create_room({
+                "teams": ["Rouges", "Bleus"],
+                "block_on_wrong": True,
+                "block_duration": 5,
+            })
+            room_code = room["room_code"]
+            host_id = room["host_id"]
+
+            kevin = join_room(room_code, "Kevin")["player"]
+            alex = join_room(room_code, "Alex")["player"]
+            sam = join_room(room_code, "Sam")["player"]
+
+            assign_player_team(room_code, host_id, kevin["id"], "0")  # Rouges
+            assign_player_team(room_code, host_id, alex["id"], "0")  # Rouges
+            assign_player_team(room_code, host_id, sam["id"], "1")   # Bleus
+
+            rooms[room_code]["status"] = "playing"
+            buzz(room_code, kevin["id"])
+
+            result = reject_answer(room_code, host_id)
+
+            blocked = result["room"]["blocked_players"]
+            assert kevin["id"] in blocked
+            assert alex["id"] in blocked
+            assert sam["id"] not in blocked
+
+    def test_reject_answer_blocks_only_player_when_teams_disabled(self):
+        with patch("app.services.room_service.save_room"):
+            room = create_room({
+                "block_on_wrong": True,
+                "block_duration": 5,
+            })
+            room_code = room["room_code"]
+            host_id = room["host_id"]
+
+            kevin = join_room(room_code, "Kevin")["player"]
+            alex = join_room(room_code, "Alex")["player"]
+
+            rooms[room_code]["status"] = "playing"
+            buzz(room_code, kevin["id"])
+
+            result = reject_answer(room_code, host_id)
+
+            blocked = result["room"]["blocked_players"]
+            assert kevin["id"] in blocked
+            assert alex["id"] not in blocked
