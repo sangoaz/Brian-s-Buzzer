@@ -585,10 +585,21 @@ def reject_answer(room_code: str, requester_id: str) -> dict:
         current_score = room["scores"].get(buzzer_id, 0)
         room["scores"][buzzer_id] = max(0, current_score - 1)
 
-    # Si block_on_wrong est activé, bloque le joueur pendant X secondes
+    # Si block_on_wrong est activé, bloque le joueur pendant X secondes.
+    # En mode équipes, toute l'équipe du joueur est bloquée : sinon un
+    # coéquipier peut retenter immédiatement, ce qui vide le blocage de
+    # son sens dans une partie en équipes.
     if room["settings"].get("block_on_wrong", False):
         block_duration = room["settings"].get("block_duration", 5)
-        room["blocked_players"][buzzer_id] = time.time() + block_duration
+        block_until = time.time() + block_duration
+        buzzer_team_id = room["players"].get(buzzer_id, {}).get("team_id")
+
+        if room.get("teams") and buzzer_team_id is not None:
+            for player_id, player in room["players"].items():
+                if player.get("team_id") == buzzer_team_id:
+                    room["blocked_players"][player_id] = block_until
+        else:
+            room["blocked_players"][buzzer_id] = block_until
 
     round_num = room.get("round", 1)
     for entry in reversed(room["buzz_history"].get(round_num, [])):
