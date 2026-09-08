@@ -1,6 +1,8 @@
+import type { RoomCreateResponse, RoomSettings, PlayerJoinResponse } from "../types/room"
+
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
 
-export async function createRoom(settings) {
+export async function createRoom(settings: RoomSettings): Promise<RoomCreateResponse> {
   const response = await fetch(`${API_BASE_URL}/rooms`, {
     method: "POST",
     headers: {
@@ -16,7 +18,7 @@ export async function createRoom(settings) {
   return response.json()
 }
 
-export async function joinRoom(roomCode, name) {
+export async function joinRoom(roomCode: string, name: string): Promise<PlayerJoinResponse> {
   const response = await fetch(`${API_BASE_URL}/rooms/${roomCode}/join`, {
     method: "POST",
     headers: {

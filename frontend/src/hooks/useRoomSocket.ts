@@ -18,6 +18,7 @@ import {
   ROOM_CLOSED,
   PONG,
 } from "../app/constants/events"
+import type { RoomState } from "../types/room"
 
 const PING_INTERVAL_MS = 15000
 // Si aucun pong ne revient dans ce délai après un ping, la connexion est
@@ -27,12 +28,24 @@ const PING_INTERVAL_MS = 15000
 // retrouver un socket fonctionnel vite, pas au bout de 40s.
 const PONG_TIMEOUT_MS = 4000
 
-export function useRoomSocket({ roomCode, playerId }) {
-  const socketRef = useRef(null)
-  const pongTimeoutRef = useRef(null)
+interface UseRoomSocketOptions {
+  roomCode: string | null | undefined
+  playerId: string | null | undefined
+}
 
-  const [socket, setSocket] = useState(null)
-  const [roomState, setRoomState] = useState(null)
+interface IncomingMessage {
+  type: string
+  room?: RoomState
+  error?: string
+  player_id?: string
+}
+
+export function useRoomSocket({ roomCode, playerId }: UseRoomSocketOptions) {
+  const socketRef = useRef<WebSocket | null>(null)
+  const pongTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+
+  const [socket, setSocket] = useState<WebSocket | null>(null)
+  const [roomState, setRoomState] = useState<RoomState | null>(null)
   const [connected, setConnected] = useState(false)
   const [error, setError] = useState("")
   const [kicked, setKicked] = useState(false)
@@ -82,8 +95,8 @@ export function useRoomSocket({ roomCode, playerId }) {
       }, Math.min(1000 * 2 ** retryAttempt, 30000))
     }
 
-    ws.onmessage = (event) => {
-      const message = JSON.parse(event.data)
+    ws.onmessage = (event: MessageEvent) => {
+      const message: IncomingMessage = JSON.parse(event.data)
 
       if (message.type === PONG) {
         clearTimeout(pongTimeoutRef.current)
@@ -92,14 +105,14 @@ export function useRoomSocket({ roomCode, playerId }) {
 
       if (message.type === ERROR) {
         setError(
-          ERROR_MESSAGES[message.error] ||
+          (message.error && ERROR_MESSAGES[message.error]) ||
           "Une erreur est survenue."
         )
         return
       }
 
       if (message.type === PLAYER_KICKED) {
-        setRoomState(message.room)
+        setRoomState(message.room ?? null)
         setError("")
 
         if (message.player_id === playerId) {
@@ -126,7 +139,7 @@ export function useRoomSocket({ roomCode, playerId }) {
         message.type === GAME_FINISHED ||
         message.type === GAME_RESTARTED
       ) {
-        setRoomState(message.room)
+        setRoomState(message.room ?? null)
         setError("")
         return
       }
@@ -141,7 +154,7 @@ export function useRoomSocket({ roomCode, playerId }) {
     }
   }, [roomCode, playerId, retryCount])
 
-  function sendAction(action) {
+  function sendAction(action: string) {
     const currentSocket = socketRef.current
 
     if (!currentSocket || currentSocket.readyState !== WebSocket.OPEN) {

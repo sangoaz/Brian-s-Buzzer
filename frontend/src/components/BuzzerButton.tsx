@@ -1,4 +1,11 @@
-export default function BuzzerButton({ disabled, onBuzz, iAmTheBuzzer = false, isBlocked = false }) {
+interface BuzzerButtonProps {
+  disabled: boolean
+  onBuzz: () => void
+  iAmTheBuzzer?: boolean
+  isBlocked?: boolean
+}
+
+export default function BuzzerButton({ disabled, onBuzz, iAmTheBuzzer = false, isBlocked = false }: BuzzerButtonProps) {
   const baseClass = "w-64 h-64 rounded-full transition text-4xl font-black shadow-2xl"
 
   const colorClass = iAmTheBuzzer

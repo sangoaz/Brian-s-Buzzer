@@ -26,7 +26,7 @@ export default function CreatePage() {
 
   const MAX_TEAMS = 6
 
-  function handleTeamNameChange(index, value) {
+  function handleTeamNameChange(index: number, value: string) {
     setTeamNames((names) => names.map((name, i) => (i === index ? value : name)))
   }
 
@@ -36,7 +36,7 @@ export default function CreatePage() {
     )
   }
 
-  function handleRemoveTeam(index) {
+  function handleRemoveTeam(index: number) {
     setTeamNames((names) =>
       names.length <= 2 ? names : names.filter((_, i) => i !== index)
     )

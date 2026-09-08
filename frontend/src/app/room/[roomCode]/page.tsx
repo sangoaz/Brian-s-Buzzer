@@ -12,10 +12,10 @@ import BuzzerButton from "../../../components/BuzzerButton"
 import PlayerList from "../../../components/PlayerList"
 
 export default function PlayerRoomPage() {
-  const { roomCode } = useParams()
+  const { roomCode } = useParams<{ roomCode: string }>()
   const router = useRouter()
 
-  const [playerId, setPlayerId] = useState(null)
+  const [playerId, setPlayerId] = useState<string | null>(null)
   const [playerName, setPlayerName] = useState("")
   const [leaving, setLeaving] = useState(false)
 
@@ -98,7 +98,7 @@ export default function PlayerRoomPage() {
   const isWaiting = status === "waiting"
   const isPlaying = status === "playing"
   const isFinished = status === "finished"
-  const serverIsBlocked = roomState?.blocked_players?.includes(playerId) ?? false
+  const serverIsBlocked = Boolean(playerId && roomState?.blocked_players?.includes(playerId))
   const [localUnblocked, setLocalUnblocked] = useState(false)
 
   useEffect(() => {

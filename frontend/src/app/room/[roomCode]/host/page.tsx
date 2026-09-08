@@ -13,16 +13,21 @@ import ResetButton from "../../../../components/ResetButton"
 import PlayerList from "../../../../components/PlayerList"
 import TeamAssignment from "../../../../components/TeamAssignment"
 
+interface YoutubePlayer {
+  pauseVideo: () => void
+  playVideo: () => void
+}
+
 export default function HostRoomPage() {
-  const { roomCode } = useParams()
+  const { roomCode } = useParams<{ roomCode: string }>()
   const router = useRouter()
 
-  const [hostId, setHostId] = useState(null)
+  const [hostId, setHostId] = useState<string | null>(null)
   const [historyOpen, setHistoryOpen] = useState(false)
   const [youtubeUrl, setYoutubeUrl] = useState("")
-  const playerRef = useRef(null)
+  const playerRef = useRef<YoutubePlayer | null>(null)
 
-  function extractVideoId(url) {
+  function extractVideoId(url: string) {
     const patterns = [
       /[?&]v=([^&]+)/,
       /youtu\.be\/([^?+]+)/,
@@ -133,7 +138,7 @@ export default function HostRoomPage() {
     if (playerRef.current) playerRef.current.playVideo()
   }
 
-  async function handleAssignTeam(playerId, teamId) {
+  async function handleAssignTeam(playerId: string, teamId: string | null) {
     await fetch(
       `${process.env.NEXT_PUBLIC_API_URL}/rooms/${roomCode}/players/${playerId}/team?host_id=${hostId}${
         teamId ? `&team_id=${teamId}` : ""
@@ -144,7 +149,7 @@ export default function HostRoomPage() {
     )
   }
 
-  async function handleKickPlayer(playerId) {
+  async function handleKickPlayer(playerId: string) {
     const player = players.find((p) => p.id === playerId)
     const confirmed = window.confirm(
       `Voulez-vous déconnecter ${player?.name ?? "ce joueur"} ?`

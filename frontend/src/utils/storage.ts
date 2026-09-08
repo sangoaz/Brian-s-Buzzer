@@ -1,4 +1,10 @@
-export function savePlayerSession({ playerId, playerName, roomCode }) {
+interface PlayerSession {
+  playerId: string
+  playerName: string
+  roomCode: string
+}
+
+export function savePlayerSession({ playerId, playerName, roomCode }: PlayerSession) {
   localStorage.setItem("player_id", playerId)
   localStorage.setItem("player_name", playerName)
   localStorage.setItem("room_code", roomCode)

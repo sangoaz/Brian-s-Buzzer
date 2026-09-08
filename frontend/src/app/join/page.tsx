@@ -41,7 +41,7 @@ function JoinForm() {
       })
   }, [])
 
-  async function handleJoinRoom(event) {
+  async function handleJoinRoom(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault()
 
     if (!roomCode.trim() || !name.trim()) {
@@ -63,7 +63,8 @@ function JoinForm() {
 
       router.push(`/room/${data.room_code}`)
     } catch (err) {
-      setError(ERROR_MESSAGES[err.message] || "Impossible de rejoindre le salon.")
+      const message = err instanceof Error ? err.message : ""
+      setError(ERROR_MESSAGES[message] || "Impossible de rejoindre le salon.")
     } finally {
       setLoading(false)
     }

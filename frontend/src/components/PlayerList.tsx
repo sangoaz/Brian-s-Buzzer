@@ -1,7 +1,14 @@
+import type { Player } from "../types/room"
+
+interface PlayerListProps {
+  players?: Player[]
+  onKickPlayer?: ((playerId: string) => void) | null
+}
+
 export default function PlayerList({
   players = [],
   onKickPlayer = null,
-}) {
+}: PlayerListProps) {
   return (
     <section className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 text-left">
       <h2 className="text-2xl font-black mb-4">
