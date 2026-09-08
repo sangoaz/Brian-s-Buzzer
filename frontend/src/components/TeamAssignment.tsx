@@ -1,8 +1,16 @@
+import type { Player, Team } from "../types/room"
+
+interface TeamAssignmentProps {
+  players?: Player[]
+  teams?: Team[]
+  onAssignTeam: (playerId: string, teamId: string | null) => void
+}
+
 export default function TeamAssignment({
   players = [],
   teams = [],
   onAssignTeam,
-}) {
+}: TeamAssignmentProps) {
   if (teams.length === 0) return null
 
   return (

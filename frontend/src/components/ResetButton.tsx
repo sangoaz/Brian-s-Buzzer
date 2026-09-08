@@ -1,7 +1,12 @@
+interface ResetButtonProps {
+  onReset: () => void
+  disabled?: boolean
+}
+
 export default function ResetButton({
   onReset,
   disabled = false,
-}) {
+}: ResetButtonProps) {
   return (
     <button
       onClick={onReset}

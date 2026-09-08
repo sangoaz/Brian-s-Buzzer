@@ -1,4 +1,11 @@
-export default function CurrentBuzzer({ currentBuzzer, large = false }) {
+import type { Player } from "../types/room"
+
+interface CurrentBuzzerProps {
+  currentBuzzer: Player | null | undefined
+  large?: boolean
+}
+
+export default function CurrentBuzzer({ currentBuzzer, large = false }: CurrentBuzzerProps) {
   return (
     <section className="mb-10 rounded-3xl bg-zinc-900 border border-zinc-800 p-8">
       <p className="text-zinc-400 mb-4">Premier buzzer</p>

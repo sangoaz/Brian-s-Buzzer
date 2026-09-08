@@ -1,9 +1,14 @@
 import { useState } from "react"
 
+interface RoomHeaderProps {
+  roomCode: string
+  playerCount?: number
+}
+
 export default function RoomHeader({
   roomCode,
   playerCount = 0,
-}) {
+}: RoomHeaderProps) {
   const [copied, setCopied] = useState(false)
 
   async function handleCopy() {

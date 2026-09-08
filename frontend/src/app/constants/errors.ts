@@ -1,4 +1,4 @@
-export const ERROR_MESSAGES = {
+export const ERROR_MESSAGES: Record<string, string> = {
   ROOM_NOT_FOUND: "Salon introuvable.",
   INVALID_PLAYER_NAME: "Veuillez entrer un pseudo valide.",
   PLAYER_NAME_ALREADY_EXISTS: "Ce pseudo est déjà utilisé dans ce salon.",
