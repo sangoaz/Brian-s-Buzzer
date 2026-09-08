@@ -16,10 +16,20 @@ import {
   GAME_FINISHED,
   GAME_RESTARTED,
   ROOM_CLOSED,
+  PONG,
 } from "../app/constants/events"
+
+const PING_INTERVAL_MS = 15000
+// Si aucun pong ne revient dans ce délai après un ping, la connexion est
+// considérée comme "zombie" (téléphone verrouillé, bascule wifi/4G) et on
+// force une reconnexion plutôt que d'attendre indéfiniment. Valeurs
+// resserrées pour un buzzer temps réel : un joueur déconnecté doit
+// retrouver un socket fonctionnel vite, pas au bout de 40s.
+const PONG_TIMEOUT_MS = 4000
 
 export function useRoomSocket({ roomCode, playerId }) {
   const socketRef = useRef(null)
+  const pongTimeoutRef = useRef(null)
 
   const [socket, setSocket] = useState(null)
   const [roomState, setRoomState] = useState(null)
@@ -51,10 +61,19 @@ export function useRoomSocket({ roomCode, playerId }) {
     const interval = setInterval(() => {
       if (ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify({ action: "ping" }))
+
+        clearTimeout(pongTimeoutRef.current)
+        pongTimeoutRef.current = setTimeout(() => {
+          // Pas de pong reçu à temps : la socket est probablement morte
+          // sans que le navigateur l'ait détecté. On force la fermeture
+          // pour déclencher la reconnexion automatique existante.
+          ws.close()
+        }, PONG_TIMEOUT_MS)
       }
-    }, 30000)
+    }, PING_INTERVAL_MS)
 
     ws.onclose = () => {
+      clearTimeout(pongTimeoutRef.current)
       setConnected(false)
       if (!shouldReconnect.current) return
       setRetryAttempt(n => n + 1)  // ← délai de plus en plus long
@@ -65,6 +84,11 @@ export function useRoomSocket({ roomCode, playerId }) {
 
     ws.onmessage = (event) => {
       const message = JSON.parse(event.data)
+
+      if (message.type === PONG) {
+        clearTimeout(pongTimeoutRef.current)
+        return
+      }
 
       if (message.type === ERROR) {
         setError(
@@ -110,6 +134,7 @@ export function useRoomSocket({ roomCode, playerId }) {
 
     return () => {
       clearInterval(interval)
+      clearTimeout(pongTimeoutRef.current)
       ws.onclose = null
       ws.close()
       socketRef.current = null
