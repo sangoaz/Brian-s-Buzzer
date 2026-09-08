@@ -425,3 +425,31 @@ class TestRejectAnswerTeamBlocking:
             blocked = result["room"]["blocked_players"]
             assert kevin["id"] in blocked
             assert alex["id"] not in blocked
+
+
+class TestPublicRoomSettings:
+    # Le front a besoin de max_rounds et block_duration (entre autres) pour
+    # rester synchronisé avec la vraie config plutôt que deviner des valeurs
+    # par défaut (cf. bug du timer de blocage fixé à 5s côté client).
+    def test_get_room_state_exposes_settings(self):
+        with patch("app.services.room_service.save_room"):
+            room = create_room({
+                "max_rounds": 10,
+                "block_on_wrong": True,
+                "block_duration": 3,
+            })
+            room_code = room["room_code"]
+
+            state = get_room_state(room_code)
+
+            assert state["room"]["settings"]["max_rounds"] == 10
+            assert state["room"]["settings"]["block_duration"] == 3
+
+    def test_get_room_state_settings_defaults_when_room_created_without_settings(self):
+        with patch("app.services.room_service.save_room"):
+            room = create_room()
+            room_code = room["room_code"]
+
+            state = get_room_state(room_code)
+
+            assert state["room"]["settings"] == {"max_rounds": None, "block_on_wrong": False}

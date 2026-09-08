@@ -28,6 +28,7 @@ export interface RoomState {
   buzz_history: Record<string, BuzzHistoryEntry[]>
   teams: Team[]
   team_scores: Record<string, number>
+  settings: Partial<RoomSettings>
 }
 
 export interface RoomSettings {

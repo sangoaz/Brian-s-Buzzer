@@ -36,6 +36,7 @@ export default function PlayerRoomPage() {
 
   const {
     roomState,
+    lastAnswerResult,
     connected,
     error,
     kicked,
@@ -45,6 +46,20 @@ export default function PlayerRoomPage() {
     roomCode,
     playerId,
   })
+
+  // Retour visuel bref sur le résultat de SA réponse : sans ça, le buzzer
+  // se remet juste à disponible sans dire si c'était bon ou mauvais, et un
+  // joueur ne peut plus le déduire du score vu qu'il est masqué en cours de
+  // partie.
+  const [answerFeedback, setAnswerFeedback] = useState<"correct" | "wrong" | null>(null)
+
+  useEffect(() => {
+    if (!lastAnswerResult || lastAnswerResult.playerId !== playerId) return
+
+    setAnswerFeedback(lastAnswerResult.result)
+    const timeout = setTimeout(() => setAnswerFeedback(null), 2500)
+    return () => clearTimeout(timeout)
+  }, [lastAnswerResult, playerId])
 
   useEffect(() => {
     if (!kicked) return
@@ -99,15 +114,22 @@ export default function PlayerRoomPage() {
   const isPlaying = status === "playing"
   const isFinished = status === "finished"
   const serverIsBlocked = Boolean(playerId && roomState?.blocked_players?.includes(playerId))
+  // Durée réelle configurée par l'hôte (3, 5 ou 10s) — le serveur est la
+  // seule source de vérité sur le blocage, mais il ne repousse pas d'état
+  // tant qu'aucune autre action n'a lieu. Ce timer local sert juste à
+  // redemander l'état au bon moment plutôt qu'à décider seul : sans lui, le
+  // bouton resterait affiché "BLOQUÉ" indéfiniment après expiration côté
+  // serveur, faute de nouvel événement pour rafraîchir blocked_players.
+  const blockDurationMs = (roomState?.settings?.block_duration ?? 5) * 1000
   const [localUnblocked, setLocalUnblocked] = useState(false)
 
   useEffect(() => {
     if (serverIsBlocked) {
       setLocalUnblocked(false)
-      const timeout = setTimeout(() => setLocalUnblocked(true), 5000)
+      const timeout = setTimeout(() => setLocalUnblocked(true), blockDurationMs)
       return () => clearTimeout(timeout)
     }
-  }, [serverIsBlocked])
+  }, [serverIsBlocked, blockDurationMs])
 
   const isBlocked = serverIsBlocked && !localUnblocked
 
@@ -166,6 +188,11 @@ export default function PlayerRoomPage() {
           <div className="rounded-3xl bg-zinc-900 border border-red-600/40 p-4 mb-6">
             <p className="text-sm uppercase tracking-widest text-red-400 font-bold">
               Partie en cours
+            </p>
+
+            <p className="text-zinc-400 mt-2">
+              Manche {roomState?.round ?? 1}
+              {roomState?.settings?.max_rounds ? ` / ${roomState.settings.max_rounds}` : ""}
             </p>
           </div>
         )}
@@ -237,6 +264,18 @@ export default function PlayerRoomPage() {
                 </li>
               ))}
             </ul>
+          </div>
+        )}
+
+        {answerFeedback && (
+          <div
+            className={`rounded-2xl p-4 mb-6 text-center font-black ${
+              answerFeedback === "correct"
+                ? "bg-green-600/20 border border-green-500/40 text-green-400"
+                : "bg-red-600/20 border border-red-500/40 text-red-400"
+            }`}
+          >
+            {answerFeedback === "correct" ? "✅ Bonne réponse !" : "❌ Mauvaise réponse"}
           </div>
         )}
 

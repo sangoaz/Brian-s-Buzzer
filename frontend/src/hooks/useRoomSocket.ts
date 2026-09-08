@@ -40,12 +40,24 @@ interface IncomingMessage {
   player_id?: string
 }
 
+export interface AnswerResult {
+  playerId: string
+  result: "correct" | "wrong"
+  token: number
+}
+
 export function useRoomSocket({ roomCode, playerId }: UseRoomSocketOptions) {
   const socketRef = useRef<WebSocket | null>(null)
   const pongTimeoutRef = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
 
   const [socket, setSocket] = useState<WebSocket | null>(null)
   const [roomState, setRoomState] = useState<RoomState | null>(null)
+  // Miroir synchrone de roomState, lu depuis onmessage : ce handler est
+  // défini une fois par connexion (l'effet ne redépend pas de roomState),
+  // donc lire roomState directement y donnerait une valeur périmée. Le ref
+  // est toujours à jour, y compris entre deux rendus.
+  const roomStateRef = useRef<RoomState | null>(null)
+  const [lastAnswerResult, setLastAnswerResult] = useState<AnswerResult | null>(null)
   const [connected, setConnected] = useState(false)
   const [error, setError] = useState("")
   const [kicked, setKicked] = useState(false)
@@ -112,6 +124,7 @@ export function useRoomSocket({ roomCode, playerId }: UseRoomSocketOptions) {
       }
 
       if (message.type === PLAYER_KICKED) {
+        roomStateRef.current = message.room ?? null
         setRoomState(message.room ?? null)
         setError("")
 
@@ -128,17 +141,35 @@ export function useRoomSocket({ roomCode, playerId }: UseRoomSocketOptions) {
         return
       }
 
+      if (message.type === ANSWER_VALIDATED || message.type === ANSWER_REJECTED) {
+        // Le buzzer courant (avant que cet événement ne le remette à zéro)
+        // est le joueur concerné par la validation/le rejet : on capture
+        // son id avant d'écraser roomState avec le nouvel état.
+        const buzzerId = roomStateRef.current?.current_buzzer?.id
+        if (buzzerId) {
+          setLastAnswerResult({
+            playerId: buzzerId,
+            result: message.type === ANSWER_VALIDATED ? "correct" : "wrong",
+            token: Date.now(),
+          })
+        }
+
+        roomStateRef.current = message.room ?? null
+        setRoomState(message.room ?? null)
+        setError("")
+        return
+      }
+
       if (
         message.type === ROOM_STATE ||
         message.type === BUZZ ||
         message.type === RESET ||
         message.type === PLAYER_LEFT ||
         message.type === GAME_STARTED ||
-        message.type === ANSWER_VALIDATED ||
-        message.type === ANSWER_REJECTED ||
         message.type === GAME_FINISHED ||
         message.type === GAME_RESTARTED
       ) {
+        roomStateRef.current = message.room ?? null
         setRoomState(message.room ?? null)
         setError("")
         return
@@ -171,6 +202,7 @@ export function useRoomSocket({ roomCode, playerId }: UseRoomSocketOptions) {
   return {
     socket,
     roomState,
+    lastAnswerResult,
     connected,
     error,
     kicked,

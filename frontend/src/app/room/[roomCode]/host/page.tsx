@@ -72,6 +72,9 @@ export default function HostRoomPage() {
   const teams = roomState?.teams ?? []
   const teamScores = roomState?.team_scores ?? {}
   const hasTeams = teams.length > 0
+  const unassignedCount = hasTeams
+    ? players.filter((player) => !player.team_id).length
+    : 0
 
   const sortedTeams = [...teams].sort(
     (a, b) => (teamScores[b.id] ?? 0) - (teamScores[a.id] ?? 0)
@@ -228,9 +231,16 @@ export default function HostRoomPage() {
               </div>
             )}
 
+            {unassignedCount > 0 && (
+              <p className="text-orange-400 text-sm mb-3">
+                {unassignedCount} joueur{unassignedCount > 1 ? "s" : ""} pas encore
+                assigné{unassignedCount > 1 ? "s" : ""} à une équipe.
+              </p>
+            )}
+
             <button
               onClick={handleStartGame}
-              disabled={!connected || players.length === 0}
+              disabled={!connected || players.length === 0 || unassignedCount > 0}
               className="
                 w-full
                 bg-red-600
@@ -257,6 +267,7 @@ export default function HostRoomPage() {
 
             <p className="text-zinc-400 mt-2 mb-4">
               Manche {roomState?.round ?? 1}
+              {roomState?.settings?.max_rounds ? ` / ${roomState.settings.max_rounds}` : ""}
             </p>
 
             <button
