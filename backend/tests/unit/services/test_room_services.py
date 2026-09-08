@@ -8,6 +8,8 @@ from app.services.room_service import (
     get_room_state,
     buzz,
     next_round,
+    validate_answer,
+    assign_player_team,
     clean_player_name,
     normalize_player_name,
     is_player_name_available,
@@ -252,3 +254,122 @@ class TestPlayerNameValidation:
         result = is_player_name_available(room, "kevin")
 
         assert result is False
+
+
+class TestAssignPlayerTeam:
+    def test_assign_player_to_team(self):
+        with patch("app.services.room_service.save_room"):
+            room = create_room({"teams": ["Rouges", "Bleus"]})
+            room_code = room["room_code"]
+            host_id = room["host_id"]
+            player = join_room(room_code, "Kevin")["player"]
+
+            result = assign_player_team(room_code, host_id, player["id"], "0")
+
+            assert result["success"] is True
+            assert rooms[room_code]["players"][player["id"]]["team_id"] == "0"
+            assert result["room"]["teams"] == [
+                {"id": "0", "name": "Rouges"},
+                {"id": "1", "name": "Bleus"},
+            ]
+
+    def test_unassign_player_with_none(self):
+        with patch("app.services.room_service.save_room"):
+            room = create_room({"teams": ["Rouges", "Bleus"]})
+            room_code = room["room_code"]
+            host_id = room["host_id"]
+            player = join_room(room_code, "Kevin")["player"]
+            assign_player_team(room_code, host_id, player["id"], "0")
+
+            result = assign_player_team(room_code, host_id, player["id"], None)
+
+            assert result["success"] is True
+            assert rooms[room_code]["players"][player["id"]]["team_id"] is None
+
+    def test_assign_player_team_requires_host(self):
+        with patch("app.services.room_service.save_room"):
+            room = create_room({"teams": ["Rouges", "Bleus"]})
+            room_code = room["room_code"]
+            player = join_room(room_code, "Kevin")["player"]
+
+            result = assign_player_team(room_code, "not-the-host", player["id"], "0")
+
+            assert result == {
+                "success": False,
+                "error": errors.NOT_HOST_ACTION,
+            }
+
+    def test_assign_player_team_unknown_team_id(self):
+        with patch("app.services.room_service.save_room"):
+            room = create_room({"teams": ["Rouges", "Bleus"]})
+            room_code = room["room_code"]
+            host_id = room["host_id"]
+            player = join_room(room_code, "Kevin")["player"]
+
+            result = assign_player_team(room_code, host_id, player["id"], "99")
+
+            assert result == {
+                "success": False,
+                "error": errors.TEAM_NOT_FOUND,
+            }
+
+    def test_assign_player_team_when_teams_not_enabled(self):
+        with patch("app.services.room_service.save_room"):
+            room = create_room()  # pas de "teams" dans les settings
+            room_code = room["room_code"]
+            host_id = room["host_id"]
+            player = join_room(room_code, "Kevin")["player"]
+
+            result = assign_player_team(room_code, host_id, player["id"], "0")
+
+            assert result == {
+                "success": False,
+                "error": errors.TEAMS_NOT_ENABLED,
+            }
+
+    def test_assign_player_team_unknown_player(self):
+        with patch("app.services.room_service.save_room"):
+            room = create_room({"teams": ["Rouges", "Bleus"]})
+            room_code = room["room_code"]
+            host_id = room["host_id"]
+
+            result = assign_player_team(room_code, host_id, "fake-player-id", "0")
+
+            assert result == {
+                "success": False,
+                "error": errors.PLAYER_NOT_FOUND,
+            }
+
+
+class TestTeamScores:
+    def test_team_scores_sum_individual_scores_of_members(self):
+        with patch("app.services.room_service.save_room"):
+            room = create_room({"teams": ["Rouges", "Bleus"]})
+            room_code = room["room_code"]
+            host_id = room["host_id"]
+
+            kevin = join_room(room_code, "Kevin")["player"]
+            alex = join_room(room_code, "Alex")["player"]
+            sam = join_room(room_code, "Sam")["player"]
+
+            assign_player_team(room_code, host_id, kevin["id"], "0")
+            assign_player_team(room_code, host_id, alex["id"], "0")
+            assign_player_team(room_code, host_id, sam["id"], "1")
+
+            rooms[room_code]["status"] = "playing"
+
+            # Kevin (équipe Rouges) buzz et a la bonne réponse -> +1 pour Rouges
+            buzz(room_code, kevin["id"])
+            result = validate_answer(room_code, host_id)
+
+            assert result["room"]["team_scores"] == {"0": 1, "1": 0}
+
+    def test_team_scores_empty_when_teams_not_enabled(self):
+        with patch("app.services.room_service.save_room"):
+            room = create_room()
+            room_code = room["room_code"]
+
+            result = get_room_state(room_code)
+
+            assert result["room"]["teams"] == []
+            assert result["room"]["team_scores"] == {}

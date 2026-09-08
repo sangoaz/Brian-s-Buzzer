@@ -21,6 +21,27 @@ export default function CreatePage() {
   const [penaltyOnWrong, setPenaltyOnWrong] = useState(false)
   const [lockOnStart, setLockOnStart] = useState(false)
 
+  const [teamsEnabled, setTeamsEnabled] = useState(false)
+  const [teamNames, setTeamNames] = useState(["Équipe 1", "Équipe 2"])
+
+  const MAX_TEAMS = 6
+
+  function handleTeamNameChange(index, value) {
+    setTeamNames((names) => names.map((name, i) => (i === index ? value : name)))
+  }
+
+  function handleAddTeam() {
+    setTeamNames((names) =>
+      names.length >= MAX_TEAMS ? names : [...names, `Équipe ${names.length + 1}`]
+    )
+  }
+
+  function handleRemoveTeam(index) {
+    setTeamNames((names) =>
+      names.length <= 2 ? names : names.filter((_, i) => i !== index)
+    )
+  }
+
   async function handleCreateRoom() {
     try {
       setLoading(true)
@@ -32,6 +53,9 @@ export default function CreatePage() {
         block_duration: blockDuration,
         penalty_on_wrong: penaltyOnWrong,
         lock_on_start: lockOnStart,
+        teams: teamsEnabled
+          ? teamNames.map((name) => name.trim()).filter(Boolean)
+          : null,
       }
 
       const data = await createRoom(settings)
@@ -157,6 +181,64 @@ export default function CreatePage() {
               }`} />
             </button>
           </div>
+        </div>
+
+        {/* Équipes */}
+        <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 mb-4">
+          <div className="flex items-center justify-between mb-4">
+            <div>
+              <h2 className="font-black text-lg">Équipes</h2>
+              <p className="text-zinc-400 text-sm">
+                Les joueurs sont assignés à une équipe, le score est collectif
+              </p>
+            </div>
+
+            <button
+              onClick={() => setTeamsEnabled(v => !v)}
+              className={`w-12 h-6 rounded-full transition ${
+                teamsEnabled ? "bg-red-600" : "bg-zinc-700"
+              }`}
+            >
+              <div className={`w-5 h-5 bg-white rounded-full mx-auto transition-transform ${
+                teamsEnabled ? "translate-x-3" : "-translate-x-3"
+              }`} />
+            </button>
+          </div>
+
+          {teamsEnabled && (
+            <div className="space-y-2">
+              {teamNames.map((name, index) => (
+                <div key={index} className="flex gap-2">
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => handleTeamNameChange(index, e.target.value)}
+                    placeholder={`Équipe ${index + 1}`}
+                    className="flex-1 bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-2 text-sm text-white placeholder-zinc-500 focus:outline-none focus:border-zinc-500"
+                  />
+
+                  {teamNames.length > 2 && (
+                    <button
+                      onClick={() => handleRemoveTeam(index)}
+                      className="px-3 rounded-xl bg-zinc-800 hover:bg-zinc-700 transition text-zinc-400"
+                      aria-label={`Supprimer ${name}`}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+              ))}
+
+              {teamNames.length < MAX_TEAMS && (
+                <button
+                  onClick={handleAddTeam}
+                  className="w-full py-2 rounded-xl text-sm font-bold bg-zinc-800 hover:bg-zinc-700 transition text-zinc-300"
+                >
+                  + Ajouter une équipe
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {/* Verrouiller à la manche */}

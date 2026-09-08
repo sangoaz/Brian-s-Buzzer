@@ -30,3 +30,5 @@ class RoomSettings(BaseModel):
     block_duration: int = 5
     penalty_on_wrong: bool = False
     lock_on_start: bool = False
+    # Noms des équipes. None ou moins de 2 noms = mode sans équipes.
+    teams: list[str] | None = None

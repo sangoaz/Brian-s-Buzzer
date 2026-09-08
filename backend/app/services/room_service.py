@@ -29,6 +29,14 @@ def create_room(settings: dict = None) -> dict:
 
     host_id = str(uuid.uuid4())
 
+    # Équipes : au moins 2 noms pour activer le mode équipes, sinon pas d'équipes.
+    team_names = (settings or {}).get("teams") or []
+    teams = (
+        [{"id": str(index), "name": name} for index, name in enumerate(team_names)]
+        if len(team_names) >= 2
+        else []
+    )
+
     rooms[room_code] = {
         "code": room_code,
         "host_id": host_id,
@@ -43,6 +51,7 @@ def create_room(settings: dict = None) -> dict:
             "max_rounds": None,
             "block_on_wrong": False,
         },
+        "teams": teams,
         "buzz_history": {},
         "last_activity": time.time(),
     }
@@ -139,6 +148,7 @@ def join_room(room_code: str, player_name: str) -> dict:
     player = {
         "id": player_id,
         "name": cleaned_player_name,
+        "team_id": None,
     }
 
     room["players"][player_id] = player
@@ -212,6 +222,58 @@ def kick_player(room_code: str, requester_id: str, player_id: str) -> dict:
 
     if current_buzzer and current_buzzer["id"] == player_id:
         room["current_buzzer"] = None
+
+    # Sauvegarde de l'état de la room en base de donnée
+    save_room(room_code, room, room["last_activity"])
+
+    return {
+        "success": True,
+        "room": get_public_room(room),
+    }
+
+
+# Assigner (ou retirer) un joueur à une équipe. Action réservée à l'hôte.
+def assign_player_team(
+    room_code: str,
+    requester_id: str,
+    player_id: str,
+    team_id: str | None,
+) -> dict:
+    room = rooms.get(room_code)
+
+    if not room:
+        return {
+            "success": False,
+            "error": errors.ROOM_NOT_FOUND,
+        }
+
+    if not can_manage_room(room, requester_id):
+        return {
+            "success": False,
+            "error": errors.NOT_HOST_ACTION,
+        }
+
+    if player_id not in room["players"]:
+        return {
+            "success": False,
+            "error": errors.PLAYER_NOT_FOUND,
+        }
+
+    if not room.get("teams"):
+        return {
+            "success": False,
+            "error": errors.TEAMS_NOT_ENABLED,
+        }
+
+    valid_team_ids = {team["id"] for team in room["teams"]}
+
+    if team_id is not None and team_id not in valid_team_ids:
+        return {
+            "success": False,
+            "error": errors.TEAM_NOT_FOUND,
+        }
+
+    room["players"][player_id]["team_id"] = team_id
 
     # Sauvegarde de l'état de la room en base de donnée
     save_room(room_code, room, room["last_activity"])
@@ -557,15 +619,30 @@ def get_public_room(room: dict) -> dict:
         pid for pid, until in room.get("blocked_players", {}).items() if until > now
     ]
 
+    teams = room.get("teams", [])
+    scores = room.get("scores", {})
+
+    # Score par équipe = somme des scores individuels de ses membres.
+    # Calculé à la volée plutôt que stocké séparément : pas de risque de
+    # désynchronisation avec les scores individuels (reset, pénalités...).
+    team_scores = {team["id"]: 0 for team in teams}
+    if teams:
+        for player_id, player in room["players"].items():
+            team_id = player.get("team_id")
+            if team_id in team_scores:
+                team_scores[team_id] += scores.get(player_id, 0)
+
     return {
         "code": room["code"],
         "players": list(room["players"].values()),
         "current_buzzer": room["current_buzzer"],
         "status": room.get("status", "waiting"),
         "round": room.get("round", 1),
-        "scores": room.get("scores", {}),
+        "scores": scores,
         "blocked_players": active_blocked,
         "buzz_history": room.get("buzz_history", {}),
+        "teams": teams,
+        "team_scores": team_scores,
     }
 
 
