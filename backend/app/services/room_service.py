@@ -654,6 +654,11 @@ def get_public_room(room: dict) -> dict:
         "buzz_history": room.get("buzz_history", {}),
         "teams": teams,
         "team_scores": team_scores,
+        # Réglages exposés aux clients (rien de sensible ici, contrairement à
+        # host_id) : permet au front de rester synchronisé sur la vraie
+        # configuration (durée de blocage, nombre de manches...) plutôt que
+        # de deviner ou de dupliquer des valeurs par défaut.
+        "settings": room.get("settings", {}),
     }
 
 

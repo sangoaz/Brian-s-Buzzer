@@ -7,4 +7,5 @@ export const ERROR_MESSAGES: Record<string, string> = {
   GAME_IN_PROGRESS: "La partie a déjà commencé.",
   TEAM_NOT_FOUND: "Équipe introuvable.",
   TEAMS_NOT_ENABLED: "Les équipes ne sont pas activées pour ce salon.",
+  PLAYER_BLOCKED: "Tu es encore bloqué suite à une mauvaise réponse, patiente un peu.",
 }

@@ -30,12 +30,7 @@ export default function RoomHeader({
         </h1>
       </div>
 
-      <div
-        className="px-3 py-1 rounded-full text-sm text-black"
-        style={{
-          background: "#f3f4f6",
-        }}
-      >
+      <div className="px-3 py-1 rounded-full text-sm bg-zinc-800 text-white">
         👥 {playerCount} joueur{playerCount > 1 ? "s" : ""}
       </div>
     </div>
