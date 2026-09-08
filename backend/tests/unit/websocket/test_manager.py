@@ -1,3 +1,5 @@
+import asyncio
+
 import pytest
 from unittest.mock import AsyncMock
 
@@ -148,3 +150,65 @@ class TestConnectionManagerBroadcast:
                 "player-1": working_websocket,
             }
         }
+
+
+class TestConnectionManagerBroadcastConcurrency:
+    @pytest.mark.asyncio
+    async def test_broadcast_slow_connection_does_not_block_others(self, manager):
+        # Reproduit le bug signalé : un téléphone dont la connexion WebSocket
+        # est "zombie" (verrouillage écran, bascule wifi/4G) ne doit pas
+        # empêcher les autres joueurs de recevoir la mise à jour en temps réel.
+        manager.send_timeout = 0.05
+
+        fast_websocket = AsyncMock()
+
+        async def slow_send(message):
+            await asyncio.sleep(1)
+
+        slow_websocket = AsyncMock()
+        slow_websocket.send_json = AsyncMock(side_effect=slow_send)
+
+        manager.active_connections = {
+            "ABCD": {
+                "player-fast": fast_websocket,
+                "player-slow": slow_websocket,
+            }
+        }
+
+        message = {"type": "room_state"}
+
+        start = asyncio.get_event_loop().time()
+        await manager.broadcast("ABCD", message)
+        elapsed = asyncio.get_event_loop().time() - start
+
+        # Le joueur "rapide" a bien reçu le message sans attendre le lent
+        fast_websocket.send_json.assert_awaited_once_with(message)
+        assert elapsed < 0.5
+
+        # Le joueur "zombie" a été détecté et retiré des connexions actives
+        assert manager.active_connections == {
+            "ABCD": {
+                "player-fast": fast_websocket,
+            }
+        }
+
+    @pytest.mark.asyncio
+    async def test_broadcast_disconnects_players_on_timeout(self, manager):
+        manager.send_timeout = 0.05
+
+        stuck_websocket = AsyncMock()
+
+        async def hang_forever(message):
+            await asyncio.sleep(10)
+
+        stuck_websocket.send_json = AsyncMock(side_effect=hang_forever)
+
+        manager.active_connections = {
+            "ABCD": {
+                "player-1": stuck_websocket,
+            }
+        }
+
+        await manager.broadcast("ABCD", {"type": "room_state"})
+
+        assert manager.active_connections == {}
