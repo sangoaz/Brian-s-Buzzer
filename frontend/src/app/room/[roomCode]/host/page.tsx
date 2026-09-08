@@ -387,13 +387,13 @@ export default function HostRoomPage() {
           disabled={!isPlaying}
         />
 
-        <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 mb-6 text-left">
-          <h2 className="text-2xl font-black mb-4">
-            Scores
-          </h2>
+        {hasTeams && (
+          <div className="rounded-3xl bg-zinc-900 border border-zinc-800 p-6 mb-6 text-left">
+            <h2 className="text-2xl font-black mb-4">
+              Scores par équipe
+            </h2>
 
-          {hasTeams && (
-            <ul className="space-y-3 mb-4">
+            <ul className="space-y-3">
               {sortedTeams.map((team) => (
                 <li
                   key={team.id}
@@ -406,52 +406,14 @@ export default function HostRoomPage() {
                 </li>
               ))}
             </ul>
-          )}
-
-          {players.length === 0 ? (
-            <p className="text-zinc-500">
-              Aucun joueur connecté.
-            </p>
-          ) : (
-            <ul className="space-y-3">
-              {players.map((player) => {
-                const team = teams.find((t) => t.id === player.team_id)
-
-                return (
-                  <li
-                    key={player.id}
-                    className="
-                      flex
-                      items-center
-                      justify-between
-                      bg-zinc-800
-                      rounded-xl
-                      px-4
-                      py-3
-                    "
-                  >
-                    <span className="font-bold">
-                      {player.name}
-                      {team && (
-                        <span className="ml-2 text-xs font-normal text-zinc-500">
-                          {team.name}
-                        </span>
-                      )}
-                    </span>
-
-                    <span className="text-red-400 font-black text-xl">
-                      {scores[player.id] ?? 0}
-                    </span>
-                  </li>
-                )
-              })}
-            </ul>
-          )}
-        </div>
+          </div>
+        )}
 
         <PlayerList
           players={players}
           onKickPlayer={handleKickPlayer}
+          scores={scores}
+          teams={teams}
         />
 
         <button
