@@ -88,6 +88,12 @@ export default function PlayerRoomPage() {
   const iAmTheBuzzer = currentBuzzer?.id === playerId
   const players = roomState?.players ?? []
   const scores = roomState?.scores ?? {}
+  const teams = roomState?.teams ?? []
+  const teamScores = roomState?.team_scores ?? {}
+  const hasTeams = teams.length > 0
+  const myTeam = teams.find(
+    (team) => team.id === players.find((p) => p.id === playerId)?.team_id
+  )
   const status = roomState?.status ?? "waiting"
   const isWaiting = status === "waiting"
   const isPlaying = status === "playing"
@@ -110,6 +116,10 @@ export default function PlayerRoomPage() {
     (a, b) => (scores[b.id] ?? 0) - (scores[a.id] ?? 0)
   )
 
+  const sortedTeams = [...teams].sort(
+    (a, b) => (teamScores[b.id] ?? 0) - (teamScores[a.id] ?? 0)
+  )
+
   return (
     <main className="min-h-screen flex items-center justify-center bg-zinc-950 text-white px-6 py-10">
       <div className="w-full max-w-md text-center">
@@ -123,6 +133,11 @@ export default function PlayerRoomPage() {
           <span className="text-white font-bold">
             {playerName}
           </span>
+          {myTeam && (
+            <span className="ml-2 text-xs font-bold text-red-400">
+              {myTeam.name}
+            </span>
+          )}
         </p>
 
         {error && (
@@ -162,6 +177,37 @@ export default function PlayerRoomPage() {
             </p>
 
             <h2 className="text-3xl font-black mb-6">Classement final</h2>
+
+            {hasTeams && (
+              <ul className="space-y-3 text-left mb-6">
+                {sortedTeams.map((team, index) => (
+                  <li
+                    key={team.id}
+                    className={`flex items-center justify-between rounded-xl px-4 py-3 ${
+                      team.id === myTeam?.id
+                        ? "border border-yellow-500/40 bg-yellow-500/10"
+                        : index === 0
+                        ? "bg-yellow-500/20"
+                        : "bg-zinc-800"
+                    }`}
+                  >
+                    <span className="font-bold">
+                      {index === 0 && "🏆 "}
+                      {index === 1 && "🥈 "}
+                      {index === 2 && "🥉 "}
+                      {index > 2 && `${index + 1}. `}
+                      {team.name}
+                      {team.id === myTeam?.id && (
+                        <span className="ml-2 text-xs text-zinc-400">(toi)</span>
+                      )}
+                    </span>
+                    <span className="text-yellow-400 font-black text-xl">
+                      {teamScores[team.id] ?? 0}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
 
             <ul className="space-y-3 text-left">
               {sortedPlayers.map((player, index) => (

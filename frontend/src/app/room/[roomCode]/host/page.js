@@ -11,6 +11,7 @@ import RoomHeader from "../../../../components/RoomHeader"
 import CurrentBuzzer from "../../../../components/CurrentBuzzer"
 import ResetButton from "../../../../components/ResetButton"
 import PlayerList from "../../../../components/PlayerList"
+import TeamAssignment from "../../../../components/TeamAssignment"
 
 export default function HostRoomPage() {
   const { roomCode } = useParams()
@@ -63,6 +64,13 @@ export default function HostRoomPage() {
   const players = roomState?.players ?? []
   const scores = roomState?.scores ?? {}
   const buzzHistory = roomState?.buzz_history ?? {}
+  const teams = roomState?.teams ?? []
+  const teamScores = roomState?.team_scores ?? {}
+  const hasTeams = teams.length > 0
+
+  const sortedTeams = [...teams].sort(
+    (a, b) => (teamScores[b.id] ?? 0) - (teamScores[a.id] ?? 0)
+  )
 
   const status = roomState?.status ?? "waiting"
 
@@ -123,6 +131,17 @@ export default function HostRoomPage() {
   function handleRejectAnswer() {
     sendAction("reject_answer")
     if (playerRef.current) playerRef.current.playVideo()
+  }
+
+  async function handleAssignTeam(playerId, teamId) {
+    await fetch(
+      `${process.env.NEXT_PUBLIC_API_URL}/rooms/${roomCode}/players/${playerId}/team?host_id=${hostId}${
+        teamId ? `&team_id=${teamId}` : ""
+      }`,
+      {
+        method: "POST",
+      }
+    )
   }
 
   async function handleKickPlayer(playerId) {
@@ -194,6 +213,16 @@ export default function HostRoomPage() {
               />
             </div>
 
+            {hasTeams && (
+              <div className="mb-6 text-left">
+                <TeamAssignment
+                  players={players}
+                  teams={teams}
+                  onAssignTeam={handleAssignTeam}
+                />
+              </div>
+            )}
+
             <button
               onClick={handleStartGame}
               disabled={!connected || players.length === 0}
@@ -242,27 +271,51 @@ export default function HostRoomPage() {
 
             <h2 className="text-3xl font-black mb-6">Classement final</h2>
 
-            <ul className="space-y-3 text-left">
-              {sortedPlayers.map((player, index) => (
-                <li
-                  key={player.id}
-                  className={`flex items-center justify-between rounded-xl px-4 py-3 ${
-                    index === 0 ? "bg-yellow-500/20 border border-yellow-500/40" : "bg-zinc-800"
-                  }`}
-                >
-                  <span className="font-bold">
-                    {index === 0 && "🏆 "}
-                    {index === 1 && "🥈 "}
-                    {index === 2 && "🥉 "}
-                    {index > 2 && `${index + 1}. `}
-                    {player.name}
-                  </span>
-                  <span className="text-yellow-400 font-black text-xl">
-                    {scores[player.id] ?? 0}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            {hasTeams ? (
+              <ul className="space-y-3 text-left">
+                {sortedTeams.map((team, index) => (
+                  <li
+                    key={team.id}
+                    className={`flex items-center justify-between rounded-xl px-4 py-3 ${
+                      index === 0 ? "bg-yellow-500/20 border border-yellow-500/40" : "bg-zinc-800"
+                    }`}
+                  >
+                    <span className="font-bold">
+                      {index === 0 && "🏆 "}
+                      {index === 1 && "🥈 "}
+                      {index === 2 && "🥉 "}
+                      {index > 2 && `${index + 1}. `}
+                      {team.name}
+                    </span>
+                    <span className="text-yellow-400 font-black text-xl">
+                      {teamScores[team.id] ?? 0}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <ul className="space-y-3 text-left">
+                {sortedPlayers.map((player, index) => (
+                  <li
+                    key={player.id}
+                    className={`flex items-center justify-between rounded-xl px-4 py-3 ${
+                      index === 0 ? "bg-yellow-500/20 border border-yellow-500/40" : "bg-zinc-800"
+                    }`}
+                  >
+                    <span className="font-bold">
+                      {index === 0 && "🏆 "}
+                      {index === 1 && "🥈 "}
+                      {index === 2 && "🥉 "}
+                      {index > 2 && `${index + 1}. `}
+                      {player.name}
+                    </span>
+                    <span className="text-yellow-400 font-black text-xl">
+                      {scores[player.id] ?? 0}
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            )}
 
             <button
               onClick={handleRestartGame}
@@ -334,34 +387,59 @@ export default function HostRoomPage() {
             Scores
           </h2>
 
+          {hasTeams && (
+            <ul className="space-y-3 mb-4">
+              {sortedTeams.map((team) => (
+                <li
+                  key={team.id}
+                  className="flex items-center justify-between bg-zinc-800 border border-zinc-700 rounded-xl px-4 py-3"
+                >
+                  <span className="font-black">{team.name}</span>
+                  <span className="text-red-400 font-black text-xl">
+                    {teamScores[team.id] ?? 0}
+                  </span>
+                </li>
+              ))}
+            </ul>
+          )}
+
           {players.length === 0 ? (
             <p className="text-zinc-500">
               Aucun joueur connecté.
             </p>
           ) : (
             <ul className="space-y-3">
-              {players.map((player) => (
-                <li
-                  key={player.id}
-                  className="
-                    flex
-                    items-center
-                    justify-between
-                    bg-zinc-800
-                    rounded-xl
-                    px-4
-                    py-3
-                  "
-                >
-                  <span className="font-bold">
-                    {player.name}
-                  </span>
+              {players.map((player) => {
+                const team = teams.find((t) => t.id === player.team_id)
 
-                  <span className="text-red-400 font-black text-xl">
-                    {scores[player.id] ?? 0}
-                  </span>
-                </li>
-              ))}
+                return (
+                  <li
+                    key={player.id}
+                    className="
+                      flex
+                      items-center
+                      justify-between
+                      bg-zinc-800
+                      rounded-xl
+                      px-4
+                      py-3
+                    "
+                  >
+                    <span className="font-bold">
+                      {player.name}
+                      {team && (
+                        <span className="ml-2 text-xs font-normal text-zinc-500">
+                          {team.name}
+                        </span>
+                      )}
+                    </span>
+
+                    <span className="text-red-400 font-black text-xl">
+                      {scores[player.id] ?? 0}
+                    </span>
+                  </li>
+                )
+              })}
             </ul>
           )}
         </div>

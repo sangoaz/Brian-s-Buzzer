@@ -16,6 +16,7 @@ from app.services.room_service import (
     next_round,
     remove_player,
     kick_player,
+    assign_player_team,
 )
 from app.constants import errors, events
 from app.utils.exceptions import raise_service_error
@@ -109,6 +110,35 @@ async def kick_player_from_room(
         {
             "type": events.PLAYER_KICKED,
             "player_id": player_id,
+            "room": result["room"],
+        },
+    )
+
+    return result
+
+
+# Route pour assigner (ou retirer, avec team_id=None) un joueur à une équipe
+@router.post("/{room_code}/players/{player_id}/team")
+async def assign_team_route(
+    room_code: str,
+    player_id: str,
+    host_id: str,
+    team_id: str | None = None,
+):
+    result = assign_player_team(
+        room_code.upper(),
+        host_id,
+        player_id,
+        team_id,
+    )
+
+    if not result["success"]:
+        raise HTTPException(status_code=403, detail=result["error"])
+
+    await manager.broadcast(
+        room_code.upper(),
+        {
+            "type": events.ROOM_STATE,
             "room": result["room"],
         },
     )
